@@ -52,13 +52,13 @@ defmodule SimpleEnumTest do
     end
   end
 
-  SimpleEnum.defenum(:state, [{:active, 1}, :inactive, {:default, 0}])
+  SimpleEnum.defenum(:state, [{:active, 1}, :inactive, {:unknown, -1}, :default])
 
   describe "defenum macros with default integer values" do
     test "metadata" do
-      assert state(:__keys__) == [:active, :inactive, :default]
-      assert state(:__values__) == [1, 2, 0]
-      assert state(:__fields__) == [active: 1, inactive: 2, default: 0]
+      assert state(:__keys__) == [:active, :inactive, :unknown, :default]
+      assert state(:__values__) == [1, 2, -1, 0]
+      assert state(:__fields__) == [active: 1, inactive: 2, unknown: -1, default: 0]
     end
   end
 

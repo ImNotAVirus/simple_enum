@@ -9,21 +9,24 @@ defmodule SimpleEnum do
 
   @spec defenum(atom(), [atom() | tuple(), ...]) :: any()
   defmacro defenum(name, kv) do
-    fields = SimpleEnum.__fields__(name, kv)
-    keys = Keyword.keys(fields)
-    values = Keyword.values(fields)
+    quote bind_quoted: [name: name, kv: kv, parent: __MODULE__] do
+      fields = parent.__fields__(name, kv)
+      keys = Keyword.keys(fields)
+      values = Keyword.values(fields)
 
-    # TODO: Check duplicate keys
-    # TODO: Check duplicate values
+      # TODO: Check duplicate keys
+      # TODO: Check duplicate values
 
-    quote bind_quoted: [name: name, fields: fields, keys: keys, values: values] do
+      # Define new @type
       type_name = Macro.var(name, __MODULE__)
       @type unquote(type_name) :: unquote(Enum.reduce(keys, &{:|, [], [&1, &2]}))
 
+      # Define introspection helpers
       def unquote(name)(:__keys__), do: unquote(keys)
       def unquote(name)(:__values__), do: unquote(values)
       def unquote(name)(:__fields__), do: unquote(fields)
 
+      # Define enum
       Enum.each(fields, fn {k, v} ->
         # def name(key), do: value
         def unquote(name)(unquote(k)), do: unquote(v)

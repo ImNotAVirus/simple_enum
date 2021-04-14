@@ -22,30 +22,30 @@ defmodule SimpleEnum do
       @type unquote(type_name) :: unquote(Enum.reduce(keys, &{:|, [], [&1, &2]}))
 
       # Define introspection helpers
-      def unquote(name)(:__keys__), do: unquote(keys)
-      def unquote(name)(:__values__), do: unquote(values)
-      def unquote(name)(:__fields__), do: unquote(fields)
+      defmacro unquote(name)(:__keys__), do: unquote(keys)
+      defmacro unquote(name)(:__values__), do: unquote(values)
+      defmacro unquote(name)(:__fields__), do: unquote(fields)
 
       # Define enum
       Enum.each(fields, fn {k, v} ->
         # def name(key), do: value
-        def unquote(name)(unquote(k)), do: unquote(v)
+        defmacro unquote(name)(unquote(k)), do: unquote(v)
         # def name(value), do: key
-        def unquote(name)(unquote(v)), do: unquote(k)
+        defmacro unquote(name)(unquote(v)), do: unquote(k)
 
         # def name(key, :key), do: key
-        def unquote(name)(unquote(k), :key), do: unquote(k)
+        defmacro unquote(name)(unquote(k), :key), do: unquote(k)
         # def name(key, :value), do: value
-        def unquote(name)(unquote(k), :value), do: unquote(v)
+        defmacro unquote(name)(unquote(k), :value), do: unquote(v)
         # def name(key, :tuple), do: {key, value}
-        def unquote(name)(unquote(k), :tuple), do: {unquote(k), unquote(v)}
+        defmacro unquote(name)(unquote(k), :tuple), do: {unquote(k), unquote(v)}
 
         # def name(value, :key), do: key
-        def unquote(name)(unquote(v), :key), do: unquote(k)
+        defmacro unquote(name)(unquote(v), :key), do: unquote(k)
         # def name(value, :value), do: value
-        def unquote(name)(unquote(v), :value), do: unquote(v)
+        defmacro unquote(name)(unquote(v), :value), do: unquote(v)
         # def name(value, :tuple), do: {key, value}
-        def unquote(name)(unquote(v), :tuple), do: {unquote(k), unquote(v)}
+        defmacro unquote(name)(unquote(v), :tuple), do: {unquote(k), unquote(v)}
       end)
     end
   end

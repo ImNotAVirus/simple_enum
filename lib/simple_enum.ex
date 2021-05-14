@@ -3,110 +3,176 @@ defmodule SimpleEnum do
   Documentation for `SimpleEnum`.
   """
 
-  defguardp is_kv(kv) when is_tuple(kv) and tuple_size(kv) == 2 and is_atom(elem(kv, 0))
-  defguardp is_integer_kv(kv) when is_kv(kv) and is_integer(elem(kv, 1))
-  defguardp is_binary_kv(kv) when is_kv(kv) and is_binary(elem(kv, 1))
+  ## Public API
 
-  @spec defenum(atom(), [atom() | tuple(), ...]) :: any()
   defmacro defenum(name, kv) do
-    quote bind_quoted: [name: name, kv: kv, parent: __MODULE__] do
-      fields = parent.__fields__(name, kv)
-      keys = Keyword.keys(fields)
-      values = Keyword.values(fields)
+    quote location: :keep do
+      import SimpleEnum,
+        only: [
+          defenum: 2,
+          is_integer_kv: 1,
+          is_string_kv: 1,
+          int_kv_to_fields: 1,
+          str_kv_to_fields: 1
+        ]
 
-      # TODO: Check duplicate keys
-      # TODO: Check duplicate values
+      @name unquote(name)
+      @kv unquote(kv)
+      @fields unquote(kv_to_fields())
+      @keys Keyword.keys(@fields)
+      @values Keyword.values(@fields)
 
-      # Define new @type
-      type_name = Macro.var(name, __MODULE__)
-      @type unquote(type_name) :: unquote(Enum.reduce(keys, &{:|, [], [&1, &2]}))
+      @fields_rev @fields
+                  |> Enum.map(fn {k, v} -> {v, k} end)
+                  |> Enum.into(%{})
+                  |> Macro.escape()
 
-      # Define introspection helpers
-      defmacro unquote(name)(:__keys__), do: unquote(keys)
-      defmacro unquote(name)(:__values__), do: unquote(values)
-      defmacro unquote(name)(:__fields__), do: unquote(fields)
+      # TODO: Check duplicate keys/values (with `@unique true` attribute)
+      # -> ValueError: duplicate values found in <enum 'Mistake'>: FOUR -> THREE
 
-      # Define enum
-      Enum.each(fields, fn {k, v} ->
-        # def name(key), do: value
-        defmacro unquote(name)(unquote(k)), do: unquote(v)
-        # def name(value), do: key
-        defmacro unquote(name)(unquote(v)), do: unquote(k)
+      unquote(types())
+      unquote(fast_introspection())
+      unquote(fast_defs_arity_1())
+      unquote(slow_arity_1())
+      unquote(fast_defs_arity_2())
+      # unquote(slow_arity_2())
 
-        # def name(key, :key), do: key
-        defmacro unquote(name)(unquote(k), :key), do: unquote(k)
-        # def name(key, :value), do: value
-        defmacro unquote(name)(unquote(k), :value), do: unquote(v)
-        # def name(key, :tuple), do: {key, value}
-        defmacro unquote(name)(unquote(k), :tuple), do: {unquote(k), unquote(v)}
+      # defmacro unquote(name)(item, arg) do
+      #   quote do
+      #     case {unquote(item), unquote(arg)} do
+      #       {x, :key} when x in unquote(@authorities_keys) ->
+      #         x
 
-        # def name(value, :key), do: key
-        defmacro unquote(name)(unquote(v), :key), do: unquote(k)
-        # def name(value, :value), do: value
-        defmacro unquote(name)(unquote(v), :value), do: unquote(v)
-        # def name(value, :tuple), do: {key, value}
-        defmacro unquote(name)(unquote(v), :tuple), do: {unquote(k), unquote(v)}
-      end)
+      #       {x, :value} when x in unquote(@authorities_keys) ->
+      #         Keyword.fetch!(unquote(fields), x)
+
+      #       {x, :key} when x in unquote(values) ->
+      #         Map.fetch!(unquote(@authorities_rev), x)
+
+      #       {x, :value} when x in unquote(values) ->
+      #         x
+
+      #       x ->
+      #         raise "invalid value for #{inspect(unquote(__MODULE__))}.authorities (got #{inspect(x)})"
+      #     end
+      #   end
+      # end
     end
   end
 
   ## Helpers
 
-  @doc false
-  @spec __fields__(atom(), nonempty_maybe_improper_list()) ::
-          keyword(integer()) | keyword(binary())
-  def __fields__(name, []) do
-    raise ArgumentError, "cannot define enum #{inspect(name)}: it does not contain keys/values"
-  end
+  defp kv_to_fields() do
+    quote unquote: false, location: :keep do
+      name = "#{inspect(__MODULE__)}.#{@name}"
 
-  def __fields__(_name, [key | _] = fields) when is_atom(key) do
-    prepare_integer_fields(fields)
-  end
-
-  def __fields__(_name, [kv | _] = fields) when is_integer_kv(kv) do
-    prepare_integer_fields(fields)
-  end
-
-  def __fields__(_name, [kv | _] = fields) when is_binary_kv(kv) do
-    prepare_binary_fields(fields)
-  end
-
-  def __fields__(name, [key | _]) do
-    raise ArgumentError,
-          "cannot define enum #{inspect(name)}: invalid value for enum " <>
-            "field: #{inspect(key)}"
+      case @kv do
+        [k | _] when is_atom(k) -> int_kv_to_fields(@kv)
+        [kv | _] when is_integer_kv(kv) -> int_kv_to_fields(@kv)
+        [kv | _] when is_string_kv(kv) -> str_kv_to_fields(@kv)
+        [] -> raise ArgumentError, "enum #{inspect(name)}: does not contain any key/value"
+        _ -> raise ArgumentError, "invalid key/value pairs for enum #{inspect(name)}"
+      end
+    end
   end
 
   ## Private functions
 
-  @doc false
-  defp prepare_integer_fields(fields, counter \\ 0, result \\ [])
-  defp prepare_integer_fields([], _counter, result), do: Enum.reverse(result)
+  defp types() do
+    quote unquote: false, location: :keep do
+      @type unquote(Macro.var(@name, __MODULE__)) ::
+              unquote(Enum.reduce(@keys, &{:|, [], [&1, &2]}))
 
-  defp prepare_integer_fields([key | tail], counter, result) when is_atom(key) do
-    prepare_integer_fields(tail, counter + 1, [{key, counter} | result])
+      # TODO: Add type for enum_keys and enum_values
+    end
   end
 
-  defp prepare_integer_fields([kv | tail], _counter, result) when is_integer_kv(kv) do
-    {_key, value} = kv
-    prepare_integer_fields(tail, value + 1, [kv | result])
+  defp fast_introspection() do
+    quote unquote: false, location: :keep do
+      defmacro unquote(@name)(:__keys__), do: unquote(@keys)
+      defmacro unquote(@name)(:__values__), do: unquote(@values)
+      defmacro unquote(@name)(:__fields__), do: unquote(@fields)
+    end
   end
 
-  defp prepare_integer_fields([term | _tail], _counter, _result) do
-    raise ArgumentError,
-          "invalid field value for `#{term}`. It must be an atom or a tuple {atom(), integer()}"
+  defp fast_defs_arity_1() do
+    quote unquote: false, location: :keep do
+      Enum.each(@fields, fn {k, v} ->
+        # def name(key), do: value
+        defmacro unquote(@name)(unquote(k)), do: unquote(v)
+        # def name(value), do: key
+        defmacro unquote(@name)(unquote(v)), do: unquote(k)
+      end)
+    end
   end
 
-  @doc false
-  defp prepare_binary_fields(fields, result \\ [])
-  defp prepare_binary_fields([], result), do: Enum.reverse(result)
+  defp fast_defs_arity_2() do
+    quote unquote: false, location: :keep do
+      Enum.each(@fields, fn {k, v} ->
+        # def name(key, :key), do: key
+        defmacro unquote(@name)(unquote(k), :key), do: unquote(k)
+        # def name(key, :value), do: value
+        defmacro unquote(@name)(unquote(k), :value), do: unquote(v)
+        # def name(key, :tuple), do: {key, value}
+        defmacro unquote(@name)(unquote(k), :tuple), do: {unquote(k), unquote(v)}
 
-  defp prepare_binary_fields([kv | tail], result) when is_binary_kv(kv) do
-    prepare_binary_fields(tail, [kv | result])
+        # def name(value, :key), do: key
+        defmacro unquote(@name)(unquote(v), :key), do: unquote(k)
+        # def name(value, :value), do: value
+        defmacro unquote(@name)(unquote(v), :value), do: unquote(v)
+        # def name(value, :tuple), do: {key, value}
+        defmacro unquote(@name)(unquote(v), :tuple), do: {unquote(k), unquote(v)}
+      end)
+    end
   end
 
-  defp prepare_binary_fields([term | _tail], _result) do
-    raise ArgumentError,
-          "invalid field value for `#{term}`. It must be a tuple {atom(), binary()}"
+  defp slow_arity_1() do
+    quote unquote: false, location: :keep, generated: true do
+      defmacro unquote(@name)(value) do
+        quote do
+          name = "#{inspect(__MODULE__)}.#{unquote(@name)}/1"
+
+          case unquote(value) do
+            :__keys__ -> unquote(@keys)
+            :__values__ -> unquote(@values)
+            :__fields__ -> unquote(@fields)
+            x when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
+            x when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
+            x -> raise "invalid value #{inspect(x)} for Enum #{inspect(name)}"
+          end
+        end
+      end
+    end
+  end
+
+  ## Internal functions
+
+  defguard is_kv(kv) when is_tuple(kv) and tuple_size(kv) == 2 and is_atom(elem(kv, 0))
+  defguard is_integer_kv(kv) when is_kv(kv) and is_integer(elem(kv, 1))
+  defguard is_string_kv(kv) when is_kv(kv) and is_binary(elem(kv, 1))
+
+  def int_kv_to_fields(kv) do
+    kv
+    |> Enum.reduce({[], 0}, fn
+      key, {result, counter} when is_atom(key) ->
+        {[{key, counter} | result], counter + 1}
+
+      {key, counter} = kv, {result, _} when is_integer_kv(kv) ->
+        {[{key, counter} | result], counter + 1}
+
+      value, _ ->
+        raise ArgumentError, "invalid key/value pairs: #{inspect(value)}"
+    end)
+    |> Kernel.elem(0)
+    |> Enum.reverse()
+  end
+
+  def str_kv_to_fields(kv) do
+    kv
+    |> Enum.reduce([], fn
+      kv, result when is_string_kv(kv) -> [kv | result]
+      value, _ -> raise ArgumentError, "invalid key/value pairs: #{inspect(value)}"
+    end)
+    |> Enum.reverse()
   end
 end

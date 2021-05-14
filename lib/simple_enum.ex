@@ -29,34 +29,15 @@ defmodule SimpleEnum do
 
       # TODO: Check duplicate keys/values (with `@unique true` attribute)
       # -> ValueError: duplicate values found in <enum 'Mistake'>: FOUR -> THREE
+      # TODO: defenump
+      # TODO: defectoenum & defectoenump
 
       unquote(types())
       unquote(fast_introspection())
       unquote(fast_defs_arity_1())
       unquote(slow_arity_1())
       unquote(fast_defs_arity_2())
-      # unquote(slow_arity_2())
-
-      # defmacro unquote(name)(item, arg) do
-      #   quote do
-      #     case {unquote(item), unquote(arg)} do
-      #       {x, :key} when x in unquote(@authorities_keys) ->
-      #         x
-
-      #       {x, :value} when x in unquote(@authorities_keys) ->
-      #         Keyword.fetch!(unquote(fields), x)
-
-      #       {x, :key} when x in unquote(values) ->
-      #         Map.fetch!(unquote(@authorities_rev), x)
-
-      #       {x, :value} when x in unquote(values) ->
-      #         x
-
-      #       x ->
-      #         raise "invalid value for #{inspect(unquote(__MODULE__))}.authorities (got #{inspect(x)})"
-      #     end
-      #   end
-      # end
+      unquote(slow_arity_2())
     end
   end
 
@@ -139,6 +120,27 @@ defmodule SimpleEnum do
             x when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
             x when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
             x -> raise "invalid value #{inspect(x)} for Enum #{inspect(name)}"
+          end
+        end
+      end
+    end
+  end
+
+  defp slow_arity_2() do
+    quote unquote: false, location: :keep, generated: true do
+      defmacro unquote(@name)(value, type) do
+        quote do
+          name = "#{inspect(__MODULE__)}.#{unquote(@name)}/2"
+
+          case {unquote(value), unquote(type)} do
+            {x, :key} when x in unquote(@keys) -> x
+            {x, :value} when x in unquote(@values) -> x
+            {x, :key} when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
+            {x, :value} when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
+            {x, :tuple} when x in unquote(@keys) -> {x, Keyword.fetch!(unquote(@fields), x)}
+            {x, :tuple} when x in unquote(@values) -> {Map.fetch!(unquote(@fields_rev), x), x}
+            {_, t} when t not in [:key, :value, :tuple] -> raise "invalid type #{inspect(t)}"
+            {x, _} -> raise "invalid value #{inspect(x)} for Enum #{name}"
           end
         end
       end

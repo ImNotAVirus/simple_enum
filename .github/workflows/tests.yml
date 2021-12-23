@@ -1,0 +1,38 @@
+---
+name: tests
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    name: Run Tests (Elixir ${{ matrix.combo.elixir }} - OTP ${{ matrix.combo.otp }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        combo:
+          - elixir: 'v1.10'
+            otp: '23'
+          - elixir: 'v1.11'
+            otp: '23'
+          - elixir: 'v1.12'
+            otp: '23'
+          - elixir: 'v1.13'
+            otp: '24'
+    env:
+      MIX_ENV: test
+    steps:
+      - uses: actions/checkout@v2
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.combo.otp }}
+          elixir-version: ${{ matrix.combo.elixir }}
+      - uses: actions/cache@v2
+        with:
+         path: deps
+         key: ${{ runner.os }}-${{ matrix.combo.otp }}-${{ matrix.combo.elixir }}-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
+         restore-keys: |
+           ${{ runner.os }}-${{ matrix.combo.otp }}-${{ matrix.combo.elixir }}-
+      - run: mix deps.get
+      - run: mix coveralls.github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

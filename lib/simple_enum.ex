@@ -30,7 +30,6 @@ defmodule SimpleEnum do
       # TODO: Check duplicate keys/values (with `@unique true` attribute)
       # -> ValueError: duplicate values found in <enum 'Mistake'>: FOUR -> THREE
       # TODO: defenump
-      # TODO: defectoenum & defectoenump
 
       unquote(types())
       unquote(fast_introspection())

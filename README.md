@@ -1,4 +1,4 @@
-# SimpleEnum
+# SimpleEnum [![Coverage Status](https://coveralls.io/repos/github/ImNotAVirus/simple_enum/badge.svg?branch=master)](https://coveralls.io/github/ImNotAVirus/simple_enum?branch=master)
 
 **TODO: Add description**
 
@@ -18,4 +18,3 @@ end
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/simple_enum](https://hexdocs.pm/simple_enum).
-

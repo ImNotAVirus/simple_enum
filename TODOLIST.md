@@ -2,28 +2,28 @@
 
 ## Tests
 
-- Module decorator, fast or slow ??
-- Raise if duplicate keys
-- Raise if duplicate values
-- Raise if no default value for string based enum
+- [ ] Module decorator, fast or slow ??
+- [ ] Raise if duplicate keys
+- [ ] Raise if duplicate values
+- [ ] Raise if no default value for string based enum
 
 ## Features
 
-- @type enum_keys
-- @type enum_values
-- @type enum
-- defenump
+- [ ] @type enum_keys
+- [ ] @type enum_values
+- [ ] @type enum
+- [ ] defenump
 
 ## Prepare release
 
-- Add code coverage
+- [x] Add code coverage
 
 ## Documentation
 
-- Basic usage (Struct.cast)
-- Slow vs Fast access
-- Ecto enum Example
+- [ ] Basic usage (Struct.cast)
+- [ ] Slow vs Fast access
+- [ ] Ecto enum Example
 
 ## Proposal
 
-- @allow_duplicate_values true
+- [ ] @allow_duplicate_values true

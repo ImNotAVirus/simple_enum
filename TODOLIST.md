@@ -13,7 +13,7 @@
 ## Features
 
 - [x] @type enum_keys
-- [ ] @type enum_values
+- [x] @type enum_values
 - [ ] @type enum
 - [ ] defenump
 - [x] Enums should support module attributes as fast access w/Macro.expand/2

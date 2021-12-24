@@ -39,10 +39,18 @@ defmodule SimpleEnum do
 
   defp types() do
     quote unquote: false, location: :keep do
+      # @type name_keys :: :key1 | :key2 | :key3
       @type unquote(Macro.var(:"#{@name}_keys", __MODULE__)) ::
-              unquote(Enum.reduce(@keys, &{:|, [], [&1, &2]}))
+              unquote(@keys |> Enum.reverse() |> Enum.reduce(&{:|, [], [&1, &2]}))
 
-      # TODO: Add type for enum_keys and enum_values
+      if @values |> Enum.at(0) |> is_binary() do
+        # @type name_values :: String.t()
+        @type unquote(Macro.var(:"#{@name}_values", __MODULE__)) :: String.t()
+      else
+        # @type name_values :: 1 | 2 | 3
+        @type unquote(Macro.var(:"#{@name}_values", __MODULE__)) ::
+                unquote(@values |> Enum.reverse() |> Enum.reduce(&{:|, [], [&1, &2]}))
+      end
     end
   end
 

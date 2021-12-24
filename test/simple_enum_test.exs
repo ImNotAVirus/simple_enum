@@ -94,10 +94,24 @@ defmodule SimpleEnumTest do
       end
       """
 
+      code2 = """
+      defmodule Enums do
+        import SimpleEnum, only: [defenum: 2]
+
+        defenum :test, [{:default, "DEFAULT"}, :invalid]
+      end
+      """
+
       assert_raise CompileError,
                    "nofile:4: invalid fields {:invalid, :field} for String based enum Enums.test",
                    fn ->
                      Code.compile_string(code)
+                   end
+
+      assert_raise CompileError,
+                   "nofile:4: invalid fields :invalid for String based enum Enums.test",
+                   fn ->
+                     Code.compile_string(code2)
                    end
     end
 

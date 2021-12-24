@@ -17,10 +17,12 @@ defmodule SimpleEnum do
         ]
 
       @name unquote(name)
+      @enum_name "#{inspect(__MODULE__)}.#{@name}"
       @kv unquote(kv)
       @fields unquote(kv_to_fields())
       @keys Keyword.keys(@fields)
       @values Keyword.values(@fields)
+      @types [:key, :value, :tuple]
 
       @fields_rev @fields
                   |> Enum.map(fn {k, v} -> {v, k} end)
@@ -44,14 +46,12 @@ defmodule SimpleEnum do
 
   defp kv_to_fields() do
     quote unquote: false, location: :keep do
-      name = "#{inspect(__MODULE__)}.#{@name}"
-
       case @kv do
         [k | _] when is_atom(k) -> int_kv_to_fields(@kv)
         [kv | _] when is_integer_kv(kv) -> int_kv_to_fields(@kv)
         [kv | _] when is_string_kv(kv) -> str_kv_to_fields(@kv)
-        [] -> raise ArgumentError, "enum #{inspect(name)}: does not contain any key/value"
-        _ -> raise ArgumentError, "invalid key/value pairs for enum #{inspect(name)}"
+        [] -> raise ArgumentError, "enum #{@enum_name} cannot be empty"
+        _ -> raise ArgumentError, "invalid key/value pairs for enum #{@enum_name}"
       end
     end
   end
@@ -86,6 +86,25 @@ defmodule SimpleEnum do
     end
   end
 
+  defp slow_arity_1() do
+    quote unquote: false, location: :keep, generated: true do
+      defmacro unquote(@name)(value) do
+        value_error = "invalid value #{inspect(value)} for Enum #{@enum_name}/1"
+
+        quote do
+          case unquote(value) do
+            :__keys__ -> unquote(@keys)
+            :__values__ -> unquote(@values)
+            :__fields__ -> unquote(@fields)
+            x when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
+            x when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
+            x -> raise ArgumentError, unquote(value_error)
+          end
+        end
+      end
+    end
+  end
+
   defp fast_defs_arity_2() do
     quote unquote: false, location: :keep do
       Enum.each(@fields, fn {k, v} ->
@@ -106,31 +125,13 @@ defmodule SimpleEnum do
     end
   end
 
-  defp slow_arity_1() do
-    quote unquote: false, location: :keep, generated: true do
-      defmacro unquote(@name)(value) do
-        quote do
-          name = "#{inspect(__MODULE__)}.#{unquote(@name)}/1"
-
-          case unquote(value) do
-            :__keys__ -> unquote(@keys)
-            :__values__ -> unquote(@values)
-            :__fields__ -> unquote(@fields)
-            x when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
-            x when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
-            x -> raise "invalid value #{inspect(x)} for Enum #{inspect(name)}"
-          end
-        end
-      end
-    end
-  end
-
   defp slow_arity_2() do
     quote unquote: false, location: :keep, generated: true do
       defmacro unquote(@name)(value, type) do
-        quote do
-          name = "#{inspect(__MODULE__)}.#{unquote(@name)}/2"
+        key_error = "invalid type #{inspect(type)}. Expected one of #{inspect(@types)}"
+        value_error = "invalid value #{inspect(value)} for Enum #{@enum_name}/2"
 
+        quote do
           case {unquote(value), unquote(type)} do
             {x, :key} when x in unquote(@keys) -> x
             {x, :value} when x in unquote(@values) -> x
@@ -138,8 +139,8 @@ defmodule SimpleEnum do
             {x, :value} when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
             {x, :tuple} when x in unquote(@keys) -> {x, Keyword.fetch!(unquote(@fields), x)}
             {x, :tuple} when x in unquote(@values) -> {Map.fetch!(unquote(@fields_rev), x), x}
-            {_, t} when t not in [:key, :value, :tuple] -> raise "invalid type #{inspect(t)}"
-            {x, _} -> raise "invalid value #{inspect(x)} for Enum #{name}"
+            {_, t} when t not in unquote(@types) -> raise ArgumentError, unquote(key_error)
+            {x, _} -> raise ArgumentError, unquote(value_error)
           end
         end
       end

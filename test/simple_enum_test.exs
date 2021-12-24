@@ -35,6 +35,15 @@ defmodule SimpleEnumTest do
       assert MyApp.Enums.day(:__values__) == ["MON", "TUE", "WED"]
       assert MyApp.Enums.day(:__fields__) == [monday: "MON", tuesday: "TUE", wednesday: "WED"]
     end
+
+    test "can be used in guard" do
+      got =
+        case 2 do
+          x when x in MyApp.Enums.color(:__values__) -> :ok
+        end
+
+      assert got == :ok
+    end
   end
 
   describe "enum/1" do
@@ -62,6 +71,21 @@ defmodule SimpleEnumTest do
       assert MyApp.Enums.color(value2) == :green
       value3 = 2
       assert MyApp.Enums.color(value3) == :red
+    end
+
+    test "can be used in guard" do
+      got =
+        case 2 do
+          x when x == MyApp.Enums.color(:red) -> :ok
+        end
+
+      assert got == :ok
+    end
+
+    test "raises if invalid value" do
+      assert_raise ArgumentError, "invalid value :invalid for Enum MyApp.Enums.color/1", fn ->
+        MyApp.Enums.color(:invalid)
+      end
     end
   end
 
@@ -102,6 +126,25 @@ defmodule SimpleEnumTest do
       assert MyApp.Enums.color(value, :key) == :blue
       assert MyApp.Enums.color(value, :value) == 0
       assert MyApp.Enums.color(value, :tuple) == {:blue, 0}
+    end
+
+    test "can be used in guard" do
+      got =
+        case {:red, 2} do
+          x when x == MyApp.Enums.color(:red, :tuple) -> :ok
+        end
+
+      assert got == :ok
+    end
+
+    test "raises if invalid value" do
+      assert_raise ArgumentError, "invalid value :invalid for Enum MyApp.Enums.color/2", fn ->
+        MyApp.Enums.color(:invalid, :key)
+      end
+
+      assert_raise ArgumentError, ~r"^invalid type :keyys. Expected one of", fn ->
+        MyApp.Enums.color(:blue, :keyys)
+      end
     end
   end
 end

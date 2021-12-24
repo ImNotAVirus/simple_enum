@@ -12,7 +12,7 @@
 
 ## Features
 
-- [ ] @type enum_keys
+- [x] @type enum_keys
 - [ ] @type enum_values
 - [ ] @type enum
 - [ ] defenump

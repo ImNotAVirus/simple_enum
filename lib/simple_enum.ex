@@ -39,7 +39,7 @@ defmodule SimpleEnum do
 
   defp types() do
     quote unquote: false, location: :keep do
-      @type unquote(Macro.var(@name, __MODULE__)) ::
+      @type unquote(Macro.var(:"#{@name}_keys", __MODULE__)) ::
               unquote(Enum.reduce(@keys, &{:|, [], [&1, &2]}))
 
       # TODO: Add type for enum_keys and enum_values

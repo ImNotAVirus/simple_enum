@@ -3,10 +3,55 @@ Code.require_file("fixtures.exs", __DIR__)
 defmodule SimpleEnumTest do
   use ExUnit.Case, async: true
 
+  import ExUnit.CaptureIO
+
   require SimpleEnum
   doctest SimpleEnum
 
   require MyApp.Enums
+
+  describe "defenum/2" do
+    test "define @type enum_keys" do
+      code = """
+      defmodule ExtractTypesEnum do
+        import SimpleEnum, only: [defenum: 2]
+        
+        # Little trick to get module bytecode
+        # I don't know if there is a better way to do that
+        # Maybe use Compiler Tracing ?
+        @after_compile __MODULE__
+
+        defenum :color, ~w(blue green red)a
+        defenum :day, monday: "MON", tuesday: "TUE", wednesday: "WED"
+        
+        def __after_compile__(_env, bytecode) do
+          {:ok, abstract_code} = typespecs_abstract_code(bytecode)
+          :io.fwrite('~s~n', [:erl_prettypr.format(:erl_syntax.form_list(abstract_code))])
+        end
+        
+        # From https://github.com/elixir-lang/elixir/blob/main/lib/elixir/lib/code/typespec.ex#L156
+        defp typespecs_abstract_code(binary) do
+          with {:ok, {_, [debug_info: {:debug_info_v1, _backend, data}]}} <-
+                 :beam_lib.chunks(binary, [:debug_info]),
+               {:elixir_v1, %{}, specs} <- data do
+            {:ok, specs}
+          else
+            _ -> :error
+          end
+        end
+      end
+      """
+
+      log = capture_io(fn -> Code.compile_string(code) end)
+
+      ## Erlang syntax
+      assert log =~ "-export_type([day_keys/0])."
+      assert log =~ "-type day_keys() :: wednesday | tuesday | monday."
+
+      assert log =~ "-export_type([color_keys/0])."
+      assert log =~ "-type color_keys() :: red | green | blue."
+    end
+  end
 
   describe "defenum/2 do not compile when" do
     test "key/value pair is empty" do

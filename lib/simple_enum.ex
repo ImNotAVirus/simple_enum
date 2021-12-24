@@ -18,11 +18,14 @@ defmodule SimpleEnum do
 
       @name unquote(name)
       @enum_name "#{inspect(__MODULE__)}.#{@name}"
+      @types [:key, :value, :tuple]
       @kv unquote(kv)
       @fields unquote(kv_to_fields())
       @keys Keyword.keys(@fields)
       @values Keyword.values(@fields)
-      @types [:key, :value, :tuple]
+
+      unquote(raise_if_duplicate_key!())
+      unquote(raise_if_duplicate_value!())
 
       @fields_rev @fields
                   |> Enum.map(fn {k, v} -> {v, k} end)
@@ -50,8 +53,28 @@ defmodule SimpleEnum do
         [k | _] when is_atom(k) -> int_kv_to_fields(@kv)
         [kv | _] when is_integer_kv(kv) -> int_kv_to_fields(@kv)
         [kv | _] when is_string_kv(kv) -> str_kv_to_fields(@kv)
-        [] -> raise ArgumentError, "enum #{@enum_name} cannot be empty"
-        _ -> raise ArgumentError, "invalid key/value pairs for enum #{@enum_name}"
+        [] -> raise CompileError, "enum #{@enum_name} cannot be empty"
+        _ -> raise CompileError, "invalid key/value pairs for enum #{@enum_name}"
+      end
+    end
+  end
+
+  defp raise_if_duplicate_key!() do
+    quote unquote: false do
+      dups = @keys -- Enum.uniq(@keys)
+
+      if length(dups) > 0 do
+        raise CompileError, "duplicate key found (#{Enum.at(dups, 0)}) for #{@enum_name}"
+      end
+    end
+  end
+
+  defp raise_if_duplicate_value!() do
+    quote unquote: false do
+      dups = @values -- Enum.uniq(@values)
+
+      if length(dups) > 0 do
+        raise CompileError, "duplicate value found (#{Enum.at(dups, 0)}) for #{@enum_name}"
       end
     end
   end
@@ -89,16 +112,33 @@ defmodule SimpleEnum do
   defp slow_arity_1() do
     quote unquote: false, location: :keep, generated: true do
       defmacro unquote(@name)(value) do
-        value_error = "invalid value #{inspect(value)} for Enum #{@enum_name}/1"
+        expanded_val = Macro.expand(value, __CALLER__)
 
-        quote do
-          case unquote(value) do
+        value_error = """
+        invalid value #{inspect(expanded_val)} for Enum #{@enum_name}/1. \
+        Expected one of #{inspect(List.flatten([@keys | @values]))}
+        """
+
+        # FIXME: Not sure if it's the best way to handle module attribute
+        if match?({:@, _, _}, value) do
+          case expanded_val do
             :__keys__ -> unquote(@keys)
             :__values__ -> unquote(@values)
             :__fields__ -> unquote(@fields)
             x when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
             x when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
-            x -> raise ArgumentError, unquote(value_error)
+            x -> raise ArgumentError, value_error
+          end
+        else
+          quote do
+            case unquote(expanded_val) do
+              :__keys__ -> unquote(@keys)
+              :__values__ -> unquote(@values)
+              :__fields__ -> unquote(@fields)
+              x when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
+              x when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
+              x -> raise ArgumentError, unquote(value_error)
+            end
           end
         end
       end
@@ -128,19 +168,40 @@ defmodule SimpleEnum do
   defp slow_arity_2() do
     quote unquote: false, location: :keep, generated: true do
       defmacro unquote(@name)(value, type) do
-        key_error = "invalid type #{inspect(type)}. Expected one of #{inspect(@types)}"
-        value_error = "invalid value #{inspect(value)} for Enum #{@enum_name}/2"
+        expanded_val = Macro.expand(value, __CALLER__)
+        expanded_type = Macro.expand(type, __CALLER__)
 
-        quote do
-          case {unquote(value), unquote(type)} do
+        value_error = """
+        invalid value #{inspect(expanded_val)} for Enum #{@enum_name}/2. \
+        Expected one of #{inspect(List.flatten([@keys | @values]))}
+        """
+
+        type_error = "invalid type #{inspect(expanded_type)}. Expected one of #{inspect(@types)}"
+
+        # FIXME: Not sure if it's the best way to handle module attribute
+        if match?({:@, _, _}, value) do
+          case {expanded_val, expanded_type} do
             {x, :key} when x in unquote(@keys) -> x
             {x, :value} when x in unquote(@values) -> x
             {x, :key} when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
             {x, :value} when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
             {x, :tuple} when x in unquote(@keys) -> {x, Keyword.fetch!(unquote(@fields), x)}
             {x, :tuple} when x in unquote(@values) -> {Map.fetch!(unquote(@fields_rev), x), x}
-            {_, t} when t not in unquote(@types) -> raise ArgumentError, unquote(key_error)
-            {x, _} -> raise ArgumentError, unquote(value_error)
+            {_, t} when t not in unquote(@types) -> raise ArgumentError, type_error
+            {x, _} -> raise ArgumentError, value_error
+          end
+        else
+          quote do
+            case {unquote(value), unquote(type)} do
+              {x, :key} when x in unquote(@keys) -> x
+              {x, :value} when x in unquote(@values) -> x
+              {x, :key} when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
+              {x, :value} when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
+              {x, :tuple} when x in unquote(@keys) -> {x, Keyword.fetch!(unquote(@fields), x)}
+              {x, :tuple} when x in unquote(@values) -> {Map.fetch!(unquote(@fields_rev), x), x}
+              {_, t} when t not in unquote(@types) -> raise ArgumentError, unquote(type_error)
+              {x, _} -> raise ArgumentError, unquote(value_error)
+            end
           end
         end
       end

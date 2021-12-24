@@ -2,7 +2,6 @@
 
 ## Tests
 
-- [ ] Module decorator, fast or slow ?? => Slow, need to be fast => Fix it!
 - [ ] Raise if duplicate keys
 - [ ] Raise if duplicate values
 - [ ] Raise if no default value for string based enum
@@ -15,7 +14,7 @@
 - [ ] @type enum_values
 - [ ] @type enum
 - [ ] defenump
-- [ ] Enums should support module attributes as fast access w/Macro.expand/2
+- [x] Enums should support module attributes as fast access w/Macro.expand/2
 
 ## Prepare release
 

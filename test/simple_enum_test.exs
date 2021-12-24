@@ -8,6 +8,21 @@ defmodule SimpleEnumTest do
 
   require MyApp.Enums
 
+  describe "defenum/2" do
+    # test "do not compile when key/value pair is empty" do
+    #   code = """
+    #   defmodule EmptyEnum do
+    #     import SimpleEnum, only: [defenum: 2]
+
+    #     defenum :test, []
+    #   end
+    #   """
+
+    #   # assert_raise CompileError, 
+    #   Code.compile_string(code)
+    # end
+  end
+
   describe "metadata helpers" do
     test "with compile time access (fast)" do
       assert MyApp.Enums.color(:__keys__) == [:blue, :green, :red]
@@ -36,7 +51,7 @@ defmodule SimpleEnumTest do
       assert MyApp.Enums.day(:__fields__) == [monday: "MON", tuesday: "TUE", wednesday: "WED"]
     end
 
-    test "can be used in guard" do
+    test "can be used in guards" do
       got =
         case 2 do
           x when x in MyApp.Enums.color(:__values__) -> :ok
@@ -73,7 +88,7 @@ defmodule SimpleEnumTest do
       assert MyApp.Enums.color(value3) == :red
     end
 
-    test "can be used in guard" do
+    test "can be used in guards" do
       got =
         case 2 do
           x when x == MyApp.Enums.color(:red) -> :ok
@@ -82,8 +97,18 @@ defmodule SimpleEnumTest do
       assert got == :ok
     end
 
+    @color_key :red
+    test "can be used with module attributes" do
+      got =
+        case 2 do
+          x when x == MyApp.Enums.color(@color_key) -> :ok
+        end
+
+      assert got == :ok
+    end
+
     test "raises if invalid value" do
-      assert_raise ArgumentError, "invalid value :invalid for Enum MyApp.Enums.color/1", fn ->
+      assert_raise ArgumentError, ~r"^invalid value :invalid for Enum MyApp.Enums.color/1", fn ->
         MyApp.Enums.color(:invalid)
       end
     end
@@ -128,7 +153,7 @@ defmodule SimpleEnumTest do
       assert MyApp.Enums.color(value, :tuple) == {:blue, 0}
     end
 
-    test "can be used in guard" do
+    test "can be used in guards" do
       got =
         case {:red, 2} do
           x when x == MyApp.Enums.color(:red, :tuple) -> :ok
@@ -137,8 +162,19 @@ defmodule SimpleEnumTest do
       assert got == :ok
     end
 
+    @color_key :red
+    @enum_type :tuple
+    test "can be used with module attributes" do
+      got =
+        case {:red, 2} do
+          x when x == MyApp.Enums.color(@color_key, @enum_type) -> :ok
+        end
+
+      assert got == :ok
+    end
+
     test "raises if invalid value" do
-      assert_raise ArgumentError, "invalid value :invalid for Enum MyApp.Enums.color/2", fn ->
+      assert_raise ArgumentError, ~r"^invalid value :invalid for Enum MyApp.Enums.color/2", fn ->
         MyApp.Enums.color(:invalid, :key)
       end
 

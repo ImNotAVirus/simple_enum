@@ -183,13 +183,13 @@ defmodule SimpleEnum do
   defp kv_to_fields(kv, enum_name, caller) do
     case kv do
       [k | _] when is_atom(k) ->
-        int_kv_to_fields(kv)
+        int_kv_to_fields(kv, enum_name, caller)
 
       [ikv | _] when is_integer_kv(ikv) ->
-        int_kv_to_fields(kv)
+        int_kv_to_fields(kv, enum_name, caller)
 
       [skv | _] when is_string_kv(skv) ->
-        str_kv_to_fields(kv)
+        str_kv_to_fields(kv, enum_name, caller)
 
       [] ->
         raise CompileError,
@@ -201,11 +201,11 @@ defmodule SimpleEnum do
         raise CompileError,
           file: caller.file,
           line: caller.line,
-          description: "invalid key/value pair for enum #{enum_name}. Got #{inspect(x)}"
+          description: "invalid fields for enum #{enum_name}. Got #{inspect(x)}"
     end
   end
 
-  defp int_kv_to_fields(kv) do
+  defp int_kv_to_fields(kv, enum_name, caller) do
     kv
     |> Enum.reduce({[], 0}, fn
       key, {result, counter} when is_atom(key) ->
@@ -215,17 +215,26 @@ defmodule SimpleEnum do
         {[{key, counter} | result], counter + 1}
 
       value, _ ->
-        raise ArgumentError, "invalid key/value pairs: #{inspect(value)}"
+        raise CompileError,
+          file: caller.file,
+          line: caller.line,
+          description: "invalid fields #{inspect(value)} for Integer based enum #{enum_name}"
     end)
     |> Kernel.elem(0)
     |> Enum.reverse()
   end
 
-  defp str_kv_to_fields(kv) do
+  defp str_kv_to_fields(kv, enum_name, caller) do
     kv
     |> Enum.reduce([], fn
-      kv, result when is_string_kv(kv) -> [kv | result]
-      value, _ -> raise ArgumentError, "invalid key/value pairs: #{inspect(value)}"
+      kv, result when is_string_kv(kv) ->
+        [kv | result]
+
+      value, _ ->
+        raise CompileError,
+          file: caller.file,
+          line: caller.line,
+          description: "invalid fields #{inspect(value)} for String based enum #{enum_name}"
     end)
     |> Enum.reverse()
   end

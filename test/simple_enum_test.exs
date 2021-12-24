@@ -25,6 +25,82 @@ defmodule SimpleEnumTest do
                    end
     end
 
+    test "do not compile when invalid field is found" do
+      code = """
+      defmodule InvalidEnum do
+        import SimpleEnum, only: [defenum: 2]
+
+        defenum :test, [invalid: :field]
+      end
+      """
+
+      code2 = """
+      defmodule InvalidEnum do
+        import SimpleEnum, only: [defenum: 2]
+
+        defenum :test, 123
+      end
+      """
+
+      assert_raise CompileError,
+                   "nofile:4: invalid fields for enum InvalidEnum.test. Got [invalid: :field]",
+                   fn ->
+                     Code.compile_string(code)
+                   end
+
+      assert_raise CompileError,
+                   "nofile:4: invalid fields for enum InvalidEnum.test. Got 123",
+                   fn ->
+                     Code.compile_string(code2)
+                   end
+    end
+
+    test "do not compile when invalid field is found (Integer based enum)" do
+      code = """
+      defmodule Enums do
+        import SimpleEnum, only: [defenum: 2]
+
+        defenum :test, [default: 0, invalid: :field]
+      end
+      """
+
+      code2 = """
+      defmodule Enums do
+        import SimpleEnum, only: [defenum: 2]
+
+        defenum :test, [:default, invalid: :field]
+      end
+      """
+
+      assert_raise CompileError,
+                   "nofile:4: invalid fields {:invalid, :field} for Integer based enum Enums.test",
+                   fn ->
+                     Code.compile_string(code)
+                   end
+
+      assert_raise CompileError,
+                   "nofile:4: invalid fields {:invalid, :field} for Integer based enum Enums.test",
+                   fn ->
+                     Code.compile_string(code2)
+                   end
+    end
+
+    test "do not compile when invalid field is found (String based enum)" do
+      code = """
+      defmodule Enums do
+        import SimpleEnum, only: [defenum: 2]
+
+        defenum :test, [default: "DEFAULT", invalid: :field]
+      end
+      """
+
+      assert_raise CompileError,
+                   "nofile:4: invalid fields {:invalid, :field} for String based enum Enums.test",
+                   fn ->
+                     Code.compile_string(code)
+                   end
+    end
+
     test "do not compile when duplicate key is found" do
       code = """
       defmodule DuplicateKeyEnum do

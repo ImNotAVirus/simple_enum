@@ -3,8 +3,9 @@
 ## Tests
 
 - [x] Raise if empty enum
-- [ ] Raise if duplicate keys
-- [ ] Raise if duplicate values
+- [x] Raise if duplicate keys
+- [x] Raise if duplicate values
+- [ ] Raise if invalid key/value pair
 - [ ] Raise if no default value for string based enum
 - [x] Raise if invalid value
 - [x] Enums can be used in guards

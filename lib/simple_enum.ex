@@ -11,6 +11,9 @@ defmodule SimpleEnum do
     enum_name = "#{inspect(__CALLER__.module)}.#{expanded_name}"
     fields = kv_to_fields(expanded_kv, enum_name, __CALLER__)
 
+    raise_if_duplicate!("key", Keyword.keys(fields), enum_name, __CALLER__)
+    raise_if_duplicate!("value", Keyword.values(fields), enum_name, __CALLER__)
+
     quote location: :keep do
       @name unquote(expanded_name)
       @enum_name unquote(enum_name)
@@ -29,28 +32,6 @@ defmodule SimpleEnum do
       unquote(def_slow_arity_1())
       unquote(def_fast_arity_2())
       unquote(def_slow_arity_2())
-    end
-  end
-
-  ## Helpers
-
-  defp raise_if_duplicate_key!() do
-    quote unquote: false do
-      dups = @keys -- Enum.uniq(@keys)
-
-      if length(dups) > 0 do
-        raise CompileError, "duplicate key found (#{Enum.at(dups, 0)}) for #{@enum_name}"
-      end
-    end
-  end
-
-  defp raise_if_duplicate_value!() do
-    quote unquote: false do
-      dups = @values -- Enum.uniq(@values)
-
-      if length(dups) > 0 do
-        raise CompileError, "duplicate value found (#{Enum.at(dups, 0)}) for #{@enum_name}"
-      end
     end
   end
 
@@ -220,7 +201,7 @@ defmodule SimpleEnum do
         raise CompileError,
           file: caller.file,
           line: caller.line,
-          description: "invalid key/value pairs for enum #{enum_name}. Got #{inspect(x)}"
+          description: "invalid key/value pair for enum #{enum_name}. Got #{inspect(x)}"
     end
   end
 
@@ -247,5 +228,16 @@ defmodule SimpleEnum do
       value, _ -> raise ArgumentError, "invalid key/value pairs: #{inspect(value)}"
     end)
     |> Enum.reverse()
+  end
+
+  defp raise_if_duplicate!(type, list, enum_name, caller) do
+    dups = list -- Enum.uniq(list)
+
+    if length(dups) > 0 do
+      raise CompileError,
+        file: caller.file,
+        line: caller.line,
+        description: "duplicate #{type} #{inspect(Enum.at(dups, 0))} found in enum #{enum_name}"
+    end
   end
 end

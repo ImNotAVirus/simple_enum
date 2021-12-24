@@ -24,6 +24,38 @@ defmodule SimpleEnumTest do
                      Code.compile_string(code)
                    end
     end
+
+    test "do not compile when duplicate key is found" do
+      code = """
+      defmodule DuplicateKeyEnum do
+        import SimpleEnum, only: [defenum: 2]
+
+        defenum :test, ~w(a b c a)a
+      end
+      """
+
+      assert_raise CompileError,
+                   "nofile:4: duplicate key :a found in enum DuplicateKeyEnum.test",
+                   fn ->
+                     Code.compile_string(code)
+                   end
+    end
+
+    test "do not compile when duplicate value is found" do
+      code = """
+      defmodule DuplicateValueEnum do
+        import SimpleEnum, only: [defenum: 2]
+
+        defenum :test, [{:a, 1}, :b, :c, {:d, 3}]
+      end
+      """
+
+      assert_raise CompileError,
+                   "nofile:4: duplicate value 3 found in enum DuplicateValueEnum.test",
+                   fn ->
+                     Code.compile_string(code)
+                   end
+    end
   end
 
   describe "metadata helpers" do

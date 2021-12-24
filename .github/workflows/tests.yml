@@ -33,6 +33,8 @@ jobs:
          restore-keys: |
            ${{ runner.os }}-${{ matrix.combo.otp }}-${{ matrix.combo.elixir }}-
       - run: mix deps.get
+      - run: mix format --dry-run --check-formatted
+      - run: mix test --trace
       - run: mix coveralls.github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

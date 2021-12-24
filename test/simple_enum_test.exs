@@ -8,8 +8,8 @@ defmodule SimpleEnumTest do
 
   require MyApp.Enums
 
-  describe "defenum/2" do
-    test "do not compile when key/value pair is empty" do
+  describe "defenum/2 do not compile when" do
+    test "key/value pair is empty" do
       code = """
       defmodule EmptyEnum do
         import SimpleEnum, only: [defenum: 2]
@@ -25,7 +25,7 @@ defmodule SimpleEnumTest do
                    end
     end
 
-    test "do not compile when invalid field is found" do
+    test "invalid field is found" do
       code = """
       defmodule InvalidEnum do
         import SimpleEnum, only: [defenum: 2]
@@ -55,7 +55,7 @@ defmodule SimpleEnumTest do
                    end
     end
 
-    test "do not compile when invalid field is found (Integer based enum)" do
+    test "invalid field is found (Integer based enum)" do
       code = """
       defmodule Enums do
         import SimpleEnum, only: [defenum: 2]
@@ -85,7 +85,7 @@ defmodule SimpleEnumTest do
                    end
     end
 
-    test "do not compile when invalid field is found (String based enum)" do
+    test "invalid field is found (String based enum)" do
       code = """
       defmodule Enums do
         import SimpleEnum, only: [defenum: 2]
@@ -115,7 +115,7 @@ defmodule SimpleEnumTest do
                    end
     end
 
-    test "do not compile when duplicate key is found" do
+    test "duplicate key is found" do
       code = """
       defmodule DuplicateKeyEnum do
         import SimpleEnum, only: [defenum: 2]
@@ -131,7 +131,7 @@ defmodule SimpleEnumTest do
                    end
     end
 
-    test "do not compile when duplicate value is found" do
+    test "duplicate value is found" do
       code = """
       defmodule DuplicateValueEnum do
         import SimpleEnum, only: [defenum: 2]

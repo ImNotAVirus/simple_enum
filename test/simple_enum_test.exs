@@ -9,18 +9,21 @@ defmodule SimpleEnumTest do
   require MyApp.Enums
 
   describe "defenum/2" do
-    # test "do not compile when key/value pair is empty" do
-    #   code = """
-    #   defmodule EmptyEnum do
-    #     import SimpleEnum, only: [defenum: 2]
+    test "do not compile when key/value pair is empty" do
+      code = """
+      defmodule EmptyEnum do
+        import SimpleEnum, only: [defenum: 2]
 
-    #     defenum :test, []
-    #   end
-    #   """
+        defenum :test, []
+      end
+      """
 
-    #   # assert_raise CompileError, 
-    #   Code.compile_string(code)
-    # end
+      assert_raise CompileError,
+                   "nofile:4: enum EmptyEnum.test cannot be empty",
+                   fn ->
+                     Code.compile_string(code)
+                   end
+    end
   end
 
   describe "metadata helpers" do

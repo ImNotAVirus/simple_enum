@@ -2,6 +2,7 @@
 
 ## Tests
 
+- [x] Raise if empty enum
 - [ ] Raise if duplicate keys
 - [ ] Raise if duplicate values
 - [ ] Raise if no default value for string based enum

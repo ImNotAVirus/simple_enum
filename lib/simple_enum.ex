@@ -6,35 +6,23 @@ defmodule SimpleEnum do
   ## Public API
 
   defmacro defenum(name, kv) do
-    quote location: :keep do
-      import SimpleEnum,
-        only: [
-          defenum: 2,
-          is_integer_kv: 1,
-          is_string_kv: 1,
-          int_kv_to_fields: 1,
-          str_kv_to_fields: 1
-        ]
+    expanded_name = Macro.expand(name, __CALLER__)
+    expanded_kv = Macro.prewalk(kv, &Macro.expand(&1, __CALLER__))
+    enum_name = "#{inspect(__CALLER__.module)}.#{expanded_name}"
+    fields = kv_to_fields(expanded_kv, enum_name, __CALLER__)
 
-      @name unquote(name)
-      @enum_name "#{inspect(__MODULE__)}.#{@name}"
-      @types [:key, :value, :tuple]
-      @kv unquote(kv)
-      @fields unquote(kv_to_fields())
+    quote location: :keep do
+      @name unquote(expanded_name)
+      @enum_name unquote(enum_name)
+      @fields unquote(fields)
       @keys Keyword.keys(@fields)
       @values Keyword.values(@fields)
-
-      unquote(raise_if_duplicate_key!())
-      unquote(raise_if_duplicate_value!())
+      @types [:key, :value, :tuple]
 
       @fields_rev @fields
                   |> Enum.map(fn {k, v} -> {v, k} end)
                   |> Enum.into(%{})
                   |> Macro.escape()
-
-      # TODO: Check duplicate keys/values (with `@unique true` attribute)
-      # -> ValueError: duplicate values found in <enum 'Mistake'>: FOUR -> THREE
-      # TODO: defenump
 
       unquote(types())
       unquote(def_fast_arity_1())
@@ -45,18 +33,6 @@ defmodule SimpleEnum do
   end
 
   ## Helpers
-
-  defp kv_to_fields() do
-    quote unquote: false, location: :keep do
-      case @kv do
-        [k | _] when is_atom(k) -> int_kv_to_fields(@kv)
-        [kv | _] when is_integer_kv(kv) -> int_kv_to_fields(@kv)
-        [kv | _] when is_string_kv(kv) -> str_kv_to_fields(@kv)
-        [] -> raise CompileError, "enum #{@enum_name} cannot be empty"
-        _ -> raise CompileError, "invalid key/value pairs for enum #{@enum_name}"
-      end
-    end
-  end
 
   defp raise_if_duplicate_key!() do
     quote unquote: false do
@@ -78,7 +54,7 @@ defmodule SimpleEnum do
     end
   end
 
-  ## Private functions
+  ## Define helpers
 
   defp types() do
     quote unquote: false, location: :keep do
@@ -219,11 +195,36 @@ defmodule SimpleEnum do
 
   ## Internal functions
 
-  defguard is_kv(kv) when is_tuple(kv) and tuple_size(kv) == 2 and is_atom(elem(kv, 0))
-  defguard is_integer_kv(kv) when is_kv(kv) and is_integer(elem(kv, 1))
-  defguard is_string_kv(kv) when is_kv(kv) and is_binary(elem(kv, 1))
+  defguardp is_kv(kv) when is_tuple(kv) and tuple_size(kv) == 2 and is_atom(elem(kv, 0))
+  defguardp is_integer_kv(kv) when is_kv(kv) and is_integer(elem(kv, 1))
+  defguardp is_string_kv(kv) when is_kv(kv) and is_binary(elem(kv, 1))
 
-  def int_kv_to_fields(kv) do
+  defp kv_to_fields(kv, enum_name, caller) do
+    case kv do
+      [k | _] when is_atom(k) ->
+        int_kv_to_fields(kv)
+
+      [ikv | _] when is_integer_kv(ikv) ->
+        int_kv_to_fields(kv)
+
+      [skv | _] when is_string_kv(skv) ->
+        str_kv_to_fields(kv)
+
+      [] ->
+        raise CompileError,
+          file: caller.file,
+          line: caller.line,
+          description: "enum #{enum_name} cannot be empty"
+
+      x ->
+        raise CompileError,
+          file: caller.file,
+          line: caller.line,
+          description: "invalid key/value pairs for enum #{enum_name}. Got #{inspect(x)}"
+    end
+  end
+
+  defp int_kv_to_fields(kv) do
     kv
     |> Enum.reduce({[], 0}, fn
       key, {result, counter} when is_atom(key) ->
@@ -239,7 +240,7 @@ defmodule SimpleEnum do
     |> Enum.reverse()
   end
 
-  def str_kv_to_fields(kv) do
+  defp str_kv_to_fields(kv) do
     kv
     |> Enum.reduce([], fn
       kv, result when is_string_kv(kv) -> [kv | result]

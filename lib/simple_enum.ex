@@ -14,7 +14,7 @@ defmodule SimpleEnum do
              |> File.read!()
              |> String.split("<!-- MDOC !-->")
              |> Enum.fetch!(1)
-             |> then(&(&1 <> @moduledoc))
+             |> Kernel.<>(@moduledoc)
 
   ## Public API
 

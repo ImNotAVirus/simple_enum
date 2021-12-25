@@ -1,8 +1,7 @@
 defmodule SimpleEnum do
-  @moduledoc "README.md"
-             |> File.read!()
-             |> String.split("<!-- MDOC !-->")
-             |> Enum.fetch!(1)
+  @moduledoc ~S"""
+  TODO: Documentation
+  """
 
   ## Public API
 
@@ -11,16 +10,18 @@ defmodule SimpleEnum do
     expanded_kv = Macro.prewalk(kv, &Macro.expand(&1, __CALLER__))
     enum_name = "#{inspect(__CALLER__.module)}.#{expanded_name}"
     fields = kv_to_fields(expanded_kv, enum_name, __CALLER__)
+    keys = Keyword.keys(fields)
+    values = Keyword.values(fields)
 
-    raise_if_duplicate!("key", Keyword.keys(fields), enum_name, __CALLER__)
-    raise_if_duplicate!("value", Keyword.values(fields), enum_name, __CALLER__)
+    raise_if_duplicate!("key", keys, enum_name, __CALLER__)
+    raise_if_duplicate!("value", values, enum_name, __CALLER__)
 
     quote location: :keep do
       @name unquote(expanded_name)
       @enum_name unquote(enum_name)
       @fields unquote(fields)
-      @keys Keyword.keys(@fields)
-      @values Keyword.values(@fields)
+      @keys unquote(keys)
+      @values unquote(values)
       @types [:key, :value, :tuple]
 
       @fields_rev @fields
@@ -30,9 +31,12 @@ defmodule SimpleEnum do
 
       unquote(types())
       unquote(def_fast_arity_1())
-      unquote(def_slow_arity_1())
       unquote(def_fast_arity_2())
-      unquote(def_slow_arity_2())
+
+      if not Module.defines?(__MODULE__, {:slow_arity_1, 4}) do
+        unquote(def_slow_arity_1())
+        unquote(def_slow_arity_2())
+      end
     end
   end
 
@@ -79,7 +83,7 @@ defmodule SimpleEnum do
   end
 
   defp def_fast_arity_1() do
-    quote unquote: false, location: :keep, generated: true do
+    quote unquote: false, location: :keep do
       defmacro unquote(@name)(value) do
         case Macro.expand(value, __CALLER__) do
           ## Introspecton
@@ -97,39 +101,14 @@ defmodule SimpleEnum do
           x when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
           #
           ## Callback to slow access
-          x -> slow_arity_1(x)
-        end
-      end
-    end
-  end
-
-  defp def_slow_arity_1() do
-    quote unquote: false, location: :keep, generated: true do
-      defp slow_arity_1(expanded_val) do
-        value_error = """
-        invalid value #{inspect(expanded_val)} for Enum #{@enum_name}/1. \
-        Expected one of #{inspect(List.flatten([@keys | @values]))}
-        """
-
-        quote do
-          case unquote(expanded_val) do
-            ## Introspecton (cf. Fast Access for more details)
-            :__keys__ -> unquote(@keys)
-            :__values__ -> unquote(@values)
-            :__fields__ -> unquote(@fields)
-            ## Slow/Runtime Access (cf. Fast Access for more details)
-            x when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
-            x when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
-            ## Error hadling
-            x -> raise ArgumentError, unquote(value_error)
-          end
+          x -> slow_arity_1(x, @fields, @fields_rev, @enum_name)
         end
       end
     end
   end
 
   defp def_fast_arity_2() do
-    quote unquote: false, location: :keep, generated: true do
+    quote unquote: false, location: :keep do
       defmacro unquote(@name)(value, type) do
         expanded_val = Macro.expand(value, __CALLER__)
         expanded_type = Macro.expand(type, __CALLER__)
@@ -150,28 +129,34 @@ defmodule SimpleEnum do
           {x, :tuple} when x in unquote(@values) -> {Map.fetch!(unquote(@fields_rev), x), x}
           #
           ## Callback to slow access
-          x -> slow_arity_2(x)
+          x -> slow_arity_2(x, @fields, @fields_rev, @enum_name)
         end
       end
+    end
+  end
 
-      defp slow_arity_2({value, type} = expanded_tuple) do
+  defp def_slow_arity_1() do
+    quote unquote: false, location: :keep, generated: true do
+      defp slow_arity_1(expanded_val, fields, fields_rev, enum_name) do
+        keys = Keyword.keys(fields)
+        values = Keyword.values(fields)
+
         value_error = """
-        invalid value #{inspect(value)} for Enum #{@enum_name}/2. \
-        Expected one of #{inspect(List.flatten([@keys | @values]))}
+        invalid value #{inspect(expanded_val)} for Enum #{enum_name}/1. \
+        Expected one of #{inspect(List.flatten([keys | values]))}
         """
 
-        type_error = "invalid type #{inspect(type)}. Expected one of #{inspect(@types)}"
-
         quote do
-          case unquote(expanded_tuple) do
-            {x, :key} when x in unquote(@keys) -> x
-            {x, :value} when x in unquote(@values) -> x
-            {x, :key} when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
-            {x, :value} when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
-            {x, :tuple} when x in unquote(@keys) -> {x, Keyword.fetch!(unquote(@fields), x)}
-            {x, :tuple} when x in unquote(@values) -> {Map.fetch!(unquote(@fields_rev), x), x}
-            {_, t} when t not in unquote(@types) -> raise ArgumentError, unquote(type_error)
-            {x, _} -> raise ArgumentError, unquote(value_error)
+          case unquote(expanded_val) do
+            ## Introspecton (cf. Fast Access for more details)
+            :__keys__ -> unquote(keys)
+            :__values__ -> unquote(values)
+            :__fields__ -> unquote(fields)
+            ## Slow/Runtime Access (cf. Fast Access for more details)
+            x when x in unquote(keys) -> Keyword.fetch!(unquote(fields), x)
+            x when x in unquote(values) -> Map.fetch!(unquote(fields_rev), x)
+            ## Error handling
+            x -> raise ArgumentError, unquote(value_error)
           end
         end
       end
@@ -180,10 +165,13 @@ defmodule SimpleEnum do
 
   defp def_slow_arity_2() do
     quote unquote: false, location: :keep, generated: true do
-      defp slow_arity_2({value, type} = expanded_tuple) do
+      defp slow_arity_2({value, type} = expanded_tuple, fields, fields_rev, enum_name) do
+        keys = Keyword.keys(fields)
+        values = Keyword.values(fields)
+
         value_error = """
-        invalid value #{inspect(value)} for Enum #{@enum_name}/2. \
-        Expected one of #{inspect(List.flatten([@keys | @values]))}
+        invalid value #{inspect(value)} for Enum #{enum_name}/2. \
+        Expected one of #{inspect(List.flatten([keys | values]))}
         """
 
         type_error = "invalid type #{inspect(type)}. Expected one of #{inspect(@types)}"
@@ -191,13 +179,13 @@ defmodule SimpleEnum do
         quote do
           case unquote(expanded_tuple) do
             ## Slow/Runtime Access (cf. Fast Access for more details)
-            {x, :key} when x in unquote(@keys) -> x
-            {x, :value} when x in unquote(@values) -> x
-            {x, :key} when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
-            {x, :value} when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
-            {x, :tuple} when x in unquote(@keys) -> {x, Keyword.fetch!(unquote(@fields), x)}
-            {x, :tuple} when x in unquote(@values) -> {Map.fetch!(unquote(@fields_rev), x), x}
-            ## Error hadling
+            {x, :key} when x in unquote(keys) -> x
+            {x, :value} when x in unquote(values) -> x
+            {x, :key} when x in unquote(values) -> Map.fetch!(unquote(fields_rev), x)
+            {x, :value} when x in unquote(keys) -> Keyword.fetch!(unquote(fields), x)
+            {x, :tuple} when x in unquote(keys) -> {x, Keyword.fetch!(unquote(fields), x)}
+            {x, :tuple} when x in unquote(values) -> {Map.fetch!(unquote(fields_rev), x), x}
+            ## Error handling
             {_, t} when t not in unquote(@types) -> raise ArgumentError, unquote(type_error)
             {x, _} -> raise ArgumentError, unquote(value_error)
           end

@@ -1,4 +1,6 @@
-# SimpleEnum [![Coverage Status](https://coveralls.io/repos/github/ImNotAVirus/simple_enum/badge.svg?branch=master)](https://coveralls.io/github/ImNotAVirus/simple_enum?branch=master)
+# SimpleEnum [![Build Status](https://github.com/ImNotAVirus/simple_enum/actions/workflows/tests.yml/badge.svg)](https://github.com/ImNotAVirus/simple_enum/actions/workflows/tests.yml) [![Coverage Status](https://coveralls.io/repos/github/ImNotAVirus/simple_enum/badge.svg?branch=master)](https://coveralls.io/github/ImNotAVirus/simple_enum?branch=master)
+
+<!-- MDOC !-->
 
 **TODO: Add description**
 

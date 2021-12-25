@@ -1,7 +1,8 @@
 defmodule SimpleEnum do
-  @moduledoc """
-  Documentation for `SimpleEnum`.
-  """
+  @moduledoc "README.md"
+             |> File.read!()
+             |> String.split("<!-- MDOC !-->")
+             |> Enum.fetch!(1)
 
   ## Public API
 

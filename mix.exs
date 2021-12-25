@@ -70,8 +70,8 @@ defmodule SimpleEnum.MixProject do
       "guides/integer_based_enum.md",
       "guides/string_based_enum.md",
       "guides/enum_types.md",
-      "guides/fast_vs_slow_access.md",
       "guides/introspection.md",
+      "guides/fast_vs_slow_access.md",
       "CHANGELOG.md",
       "LICENSE.md",
       "README.md": [filename: "overview", title: "Overview"]

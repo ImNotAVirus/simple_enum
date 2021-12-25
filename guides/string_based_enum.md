@@ -1,1 +1,1 @@
-# String based Enum
+# String-based Enum

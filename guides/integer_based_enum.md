@@ -1,1 +1,1 @@
-# Integer based Enum
+# Integer-based Enum

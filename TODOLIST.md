@@ -14,8 +14,7 @@
 
 - [x] @type enum_keys
 - [x] @type enum_values
-- [ ] @type enum
-- [ ] defenump
+- [x] @type enum
 - [x] Enums should support module attributes as fast access w/Macro.expand/2
 
 ## Prepare release
@@ -30,7 +29,8 @@
 - [ ] Slow vs Fast access
 - [ ] Ecto enum Example
 
-## Proposal
+## Proposals
 
+- [ ] defenump
 - [ ] @allow_duplicate_values true / @unique false
 - [ ] is_enum/1 and is_enum/2

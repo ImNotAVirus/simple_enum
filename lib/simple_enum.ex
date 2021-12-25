@@ -39,17 +39,40 @@ defmodule SimpleEnum do
 
   defp types() do
     quote unquote: false, location: :keep do
+      keys_ast = @keys |> Enum.reverse() |> Enum.reduce(&{:|, [], [&1, &2]})
+      last_key = Enum.at(@keys, -1)
+
       # @type name_keys :: :key1 | :key2 | :key3
-      @type unquote(Macro.var(:"#{@name}_keys", __MODULE__)) ::
-              unquote(@keys |> Enum.reverse() |> Enum.reduce(&{:|, [], [&1, &2]}))
+      @type unquote(Macro.var(:"#{@name}_keys", __MODULE__)) :: unquote(keys_ast)
 
       if @values |> Enum.at(0) |> is_binary() do
         # @type name_values :: String.t()
         @type unquote(Macro.var(:"#{@name}_values", __MODULE__)) :: String.t()
+
+        string_t_ast = {{:., [], [{:__aliases__, [alias: false], [:String]}, :t]}, [], []}
+
+        # @type name :: :key1 | :key2 | :key3 | String.t()
+        @type unquote(Macro.var(@name, __MODULE__)) ::
+                unquote(
+                  Macro.postwalk(keys_ast, fn
+                    ^last_key = x -> {:|, [], [x, string_t_ast]}
+                    x -> x
+                  end)
+                )
       else
+        values_ast = @values |> Enum.reverse() |> Enum.reduce(&{:|, [], [&1, &2]})
+
         # @type name_values :: 1 | 2 | 3
-        @type unquote(Macro.var(:"#{@name}_values", __MODULE__)) ::
-                unquote(@values |> Enum.reverse() |> Enum.reduce(&{:|, [], [&1, &2]}))
+        @type unquote(Macro.var(:"#{@name}_values", __MODULE__)) :: unquote(values_ast)
+
+        # @type name :: :key1 | :key2 | :key3 | 1 | 2 | 3
+        @type unquote(Macro.var(@name, __MODULE__)) ::
+                unquote(
+                  Macro.postwalk(keys_ast, fn
+                    ^last_key = x -> {:|, [], [x, values_ast]}
+                    x -> x
+                  end)
+                )
       end
     end
   end

@@ -20,14 +20,14 @@
 ## Prepare release
 
 - [x] Add code coverage
-- [ ] Keep location: :keep ?
 
 ## Documentation
 
 - [ ] Basic usage (Struct.cast)
 - [ ] Can be used in guard
 - [ ] Slow vs Fast access
-- [ ] Ecto enum Example
+- [x] Ecto enum Example
+- [x] formatter.exs
 
 ## Proposals
 

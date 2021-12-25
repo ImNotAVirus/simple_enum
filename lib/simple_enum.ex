@@ -1,13 +1,37 @@
 defmodule SimpleEnum do
   @moduledoc ~S"""
-  TODO: Documentation
+  Test documentation
+
+
+      
+      
   """
+
+  readme_path = [__DIR__, "..", "README.md"] |> Path.join() |> Path.expand()
+
+  @external_resource readme_path
+  @moduledoc readme_path
+             |> File.read!()
+             |> String.split("<!-- MDOC !-->")
+             |> Enum.fetch!(1)
+             |> then(&(&1 <> @moduledoc))
 
   ## Public API
 
-  defmacro defenum(name, kv) do
+  @doc ~S"""
+  Defines a set of macros to create and access an Enumeration.
+
+  The name of the generated macros will be `name` (which has to be an atom). 
+
+  The following macros are generated:
+
+   * 123
+   * 456
+   * 789
+  """
+  defmacro defenum(name, enumerators) do
     expanded_name = Macro.expand(name, __CALLER__)
-    expanded_kv = Macro.prewalk(kv, &Macro.expand(&1, __CALLER__))
+    expanded_kv = Macro.prewalk(enumerators, &Macro.expand(&1, __CALLER__))
     enum_name = "#{inspect(__CALLER__.module)}.#{expanded_name}"
     fields = kv_to_fields(expanded_kv, enum_name, __CALLER__)
     keys = Keyword.keys(fields)
@@ -91,8 +115,8 @@ defmodule SimpleEnum do
           :__keys__ -> unquote(@keys)
           # def name(:__values__), do: @values
           :__values__ -> unquote(@values)
-          # def name(:__fields__), do: @fields
-          :__fields__ -> unquote(@fields)
+          # def name(:__enumerators__), do: @fields
+          :__enumerators__ -> unquote(@fields)
           #
           ## Fast/Compile time Access
           # def name(key), do: value
@@ -151,7 +175,7 @@ defmodule SimpleEnum do
             ## Introspecton (cf. Fast Access for more details)
             :__keys__ -> unquote(keys)
             :__values__ -> unquote(values)
-            :__fields__ -> unquote(fields)
+            :__enumerators__ -> unquote(fields)
             ## Slow/Runtime Access (cf. Fast Access for more details)
             x when x in unquote(keys) -> Keyword.fetch!(unquote(fields), x)
             x when x in unquote(values) -> Map.fetch!(unquote(fields_rev), x)

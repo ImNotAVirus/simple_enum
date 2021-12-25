@@ -6,7 +6,7 @@ defmodule SimpleEnumTest do
   import ExUnit.CaptureIO
 
   require SimpleEnum
-  doctest SimpleEnum
+  # doctest SimpleEnum
 
   require MyApp.Enums
 
@@ -285,7 +285,7 @@ defmodule SimpleEnumTest do
     test "with compile time access (fast)" do
       assert MyApp.Enums.color(:__keys__) == [:blue, :green, :red]
       assert MyApp.Enums.color(:__values__) == [0, 1, 2]
-      assert MyApp.Enums.color(:__fields__) == [blue: 0, green: 1, red: 2]
+      assert MyApp.Enums.color(:__enumerators__) == [blue: 0, green: 1, red: 2]
     end
 
     test "with runtime access (slow)" do
@@ -293,20 +293,31 @@ defmodule SimpleEnumTest do
       assert MyApp.Enums.color(type1) == [:blue, :green, :red]
       type2 = :__values__
       assert MyApp.Enums.color(type2) == [0, 1, 2]
-      type3 = :__fields__
+      type3 = :__enumerators__
       assert MyApp.Enums.color(type3) == [blue: 0, green: 1, red: 2]
     end
 
     test "for default integer values" do
       assert MyApp.Enums.state(:__keys__) == [:active, :inactive, :unknown, :default]
       assert MyApp.Enums.state(:__values__) == [1, 2, -1, 0]
-      assert MyApp.Enums.state(:__fields__) == [active: 1, inactive: 2, unknown: -1, default: 0]
+
+      assert MyApp.Enums.state(:__enumerators__) == [
+               active: 1,
+               inactive: 2,
+               unknown: -1,
+               default: 0
+             ]
     end
 
     test "for default string values" do
       assert MyApp.Enums.day(:__keys__) == [:monday, :tuesday, :wednesday]
       assert MyApp.Enums.day(:__values__) == ["MON", "TUE", "WED"]
-      assert MyApp.Enums.day(:__fields__) == [monday: "MON", tuesday: "TUE", wednesday: "WED"]
+
+      assert MyApp.Enums.day(:__enumerators__) == [
+               monday: "MON",
+               tuesday: "TUE",
+               wednesday: "WED"
+             ]
     end
 
     test "can be used in guards" do

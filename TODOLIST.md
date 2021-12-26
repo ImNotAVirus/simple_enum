@@ -31,6 +31,7 @@
 
 ## Proposals
 
+- [ ] Custom Exception instead of ArgumentError for better pattern matching
 - [ ] defenump
 - [ ] @allow_duplicate_values true / @unique false
 - [ ] is_enum/1 and is_enum/2

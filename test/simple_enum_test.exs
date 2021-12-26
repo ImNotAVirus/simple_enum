@@ -188,7 +188,7 @@ defmodule SimpleEnumTest do
                    end
     end
 
-    test "invalid field is found (Integer based enum)" do
+    test "invalid field is found (Integer-based enum)" do
       code = """
       defmodule Enums do
         import SimpleEnum, only: [defenum: 2]
@@ -206,19 +206,19 @@ defmodule SimpleEnumTest do
       """
 
       assert_raise CompileError,
-                   "nofile:4: invalid fields {:invalid, :field} for Integer based enum Enums.test",
+                   "nofile:4: invalid fields {:invalid, :field} for integer-based enum Enums.test",
                    fn ->
                      Code.compile_string(code)
                    end
 
       assert_raise CompileError,
-                   "nofile:4: invalid fields {:invalid, :field} for Integer based enum Enums.test",
+                   "nofile:4: invalid fields {:invalid, :field} for integer-based enum Enums.test",
                    fn ->
                      Code.compile_string(code2)
                    end
     end
 
-    test "invalid field is found (String based enum)" do
+    test "invalid field is found (String-based enum)" do
       code = """
       defmodule Enums do
         import SimpleEnum, only: [defenum: 2]
@@ -236,13 +236,13 @@ defmodule SimpleEnumTest do
       """
 
       assert_raise CompileError,
-                   "nofile:4: invalid fields {:invalid, :field} for String based enum Enums.test",
+                   "nofile:4: invalid fields {:invalid, :field} for string-based enum Enums.test",
                    fn ->
                      Code.compile_string(code)
                    end
 
       assert_raise CompileError,
-                   "nofile:4: invalid fields :invalid for String based enum Enums.test",
+                   "nofile:4: invalid fields :invalid for string-based enum Enums.test",
                    fn ->
                      Code.compile_string(code2)
                    end

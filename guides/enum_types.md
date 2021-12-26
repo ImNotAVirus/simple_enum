@@ -24,6 +24,6 @@ Enums automatically generate typespecs to be used with Dialyzer.
     @type state_keys() :: :active | :inactive | :unknown | :default
     @type state_values() :: 1 | 2 | -1 | 0
 
-**NOTE**: As you can see, in the case of a String-based Enum, the type generated
+**NOTE**: As you can see, in the case of a string-based Enum, the type generated
 for a value's typespec will be `t:String.t/0` since it is not possible to specify a
 String set in typespecs.

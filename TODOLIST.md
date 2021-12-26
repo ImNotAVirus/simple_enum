@@ -6,7 +6,7 @@
 - [x] Raise if duplicate keys
 - [x] Raise if duplicate values
 - [x] Raise if invalid fields
-- [x] Raise if no default value for string based enum
+- [x] Raise if no default value for string-based enum
 - [x] Raise if invalid value
 - [x] Enums can be used in guards
 

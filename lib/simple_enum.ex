@@ -266,7 +266,7 @@ defmodule SimpleEnum do
         raise CompileError,
           file: caller.file,
           line: caller.line,
-          description: "invalid fields #{inspect(value)} for Integer based enum #{enum_name}"
+          description: "invalid fields #{inspect(value)} for integer-based enum #{enum_name}"
     end)
     |> Kernel.elem(0)
     |> Enum.reverse()
@@ -282,7 +282,7 @@ defmodule SimpleEnum do
         raise CompileError,
           file: caller.file,
           line: caller.line,
-          description: "invalid fields #{inspect(value)} for String based enum #{enum_name}"
+          description: "invalid fields #{inspect(value)} for string-based enum #{enum_name}"
     end)
     |> Enum.reverse()
   end

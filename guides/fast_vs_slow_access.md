@@ -10,10 +10,10 @@ Enumerations access can be resolved in 2 different ways:
 When it's possible, SimpleEnum will try to replace Enum access directly
 with it's value (Fast access).  
 In order to do this, all arguments given to the Enum access must be resolvable
-at the compile time.
+at compile time.
 
-To check this behaviour, let's write a simple function to inspect AST of an Enum
-named `color`.
+To verify this behaviour, let's write a simple function to inspect the AST of an
+Enum named `color`.
 
     iex> defmodule EnumInspector do
     ...>   def inspect_ast(quoted_expr, env) do
@@ -37,7 +37,7 @@ arguments at compile time :
     ...>   # Define the Enum
     ...>   defenum :color, [:blue, :green, :red]
     ...> 
-    ...>   # Inspect the generated AST
+    ...>   # Inspect the generated AST of a function using Fast access
     ...>   EnumInspector.inspect_ast(quote do
     ...>     dep test() do
     ...>       color(:red, :value)
@@ -68,7 +68,7 @@ time.
     ...>   # Define the Enum
     ...>   defenum :color, [:blue, :green, :red]
     ...>
-    ...>   # Inspect the generated AST
+    ...>   # Inspect the generated AST of a function using Slow access
     ...>   EnumInspector.inspect_ast(quote do
     ...>       dep test(value) do
     ...>           color(value, :value)
@@ -98,7 +98,7 @@ time.
     end
 
 This time, the `color(value, :value)` access has been transformed into a big `case`
-checking at runtime the value of the arguments given to the Enum.
+checking at runtime the value of the arguments given.
 
 _It is therefore recommended, when it is possible, to avoid creating temporary variables
 in order to store arguments for an Enum access._

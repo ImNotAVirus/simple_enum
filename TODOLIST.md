@@ -31,7 +31,7 @@
 
 ## Proposals
 
-- [ ] Custom Exception instead of ArgumentError for better pattern matching
+- [ ] Custom Exception (EnumValueError) instead of ArgumentError for better pattern matching
 - [ ] defenump
-- [ ] @allow_duplicate_values true / @unique false
-- [ ] is_enum/1 and is_enum/2
+- [ ] @allow_duplicate_values true or @unique false to allow duplicates values
+- [ ] is_enum/1, is_enum_key/1 & is_enum_value/1: eg. is_color(:red), is_color_key(:red) & is_color_value(:red)

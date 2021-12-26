@@ -1,12 +1,4 @@
 defmodule SimpleEnum do
-  @moduledoc ~S"""
-  Test documentation
-
-
-      
-      
-  """
-
   readme_path = [__DIR__, "..", "README.md"] |> Path.join() |> Path.expand()
 
   @external_resource readme_path
@@ -14,20 +6,80 @@ defmodule SimpleEnum do
              |> File.read!()
              |> String.split("<!-- MDOC !-->")
              |> Enum.fetch!(1)
-             |> Kernel.<>(@moduledoc)
 
   ## Public API
 
   @doc ~S"""
-  Defines a set of macros to create and access an Enumeration.
+  Defines a set of macros to create and access Enumerations.
 
-  The name of the generated macros will be `name` (which has to be an atom). 
+  The name of the generated macros and types will be `name` (which has to be an atom).  
+  The `enumerators` argument has to be either:
+
+   * A keyword list composed of strings (to create a string-based Enumeration)
+   * A keyword list composed of integers (to create an integer-based Enumeration)
+   * A list of atoms (to create an integer-based Enumeration)
+
+  For more details about [string-based Enumeration](guides/string_based_enum.md) and
+  [integer-based Enumeration](guides/integer_based_enum.md), you can check the
+  corresponding guide.
 
   The following macros are generated:
 
-   * 123
-   * 456
-   * 789
+   * `name/1` to access a key, a value or to inspect an Enumeration
+   * `name/2` to access a key, a value or its tuple by specifying the return type
+
+  The following types are generated:
+
+   * `@type enum :: :key1 | :key2 | :value1 | :value2`
+   * `@type enum_keys :: :key1 | :key2`
+   * `@type enum_values :: :value1 | :value2`
+
+  For more details about [types](guides/enum_types.md) you can also check the
+  corresponding guide.
+
+  All these macros are public macros (as defined by `defmacro/2`).
+
+  See the "Examples" section for examples on how to use these macros.
+
+  ## Examples
+
+      defmodule MyApp.Enums do
+        import SimpleEnum, only: [defenum: 2]
+        defenum :color, [:blue, :green, :red]
+      end
+
+  In the example above, a set of macros named `color` but with different arities
+  will be defined to manipulate the underlying Enumeration.
+
+      # Import the module to make the color macros locally available
+      import MyApp.Enums
+      
+      # To lookup the corresponding value
+      color(:blue)    #=> 0
+      color(:green)   #=> 1
+      color(:red)     #=> 2
+      color(0)        #=> :blue
+      color(1)        #=> :green
+      color(2)        #=> :red
+      
+      # To lookup for the key regardless of the given value
+      color(:red, :key) #=> :red
+      color(2, :key)    #=> :red
+      
+      # To lookup for the value regardless of the given value
+      color(:red, :value) #=> 2
+      color(2, :value)    #=> 2
+      
+      # To get the key/value pair of the given value
+      color(:red, :tuple) #=> {:red, 2}
+      color(2, :tuple)    #=> {:red, 2}
+
+  Is also possible to inspect the Enumeration by using introspection helpers :
+
+      color(:__keys__)        #=> [:blue, :green, :red]
+      color(:__values__)      #=> [0, 1, 2]
+      color(:__enumerators__) #=> [blue: 0, green: 1, red: 2]
+
   """
   defmacro defenum(name, enumerators) do
     expanded_name = Macro.expand(name, __CALLER__)

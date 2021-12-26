@@ -9,13 +9,17 @@
 
 SimpleEnum is a simple library that implements Enumerations in Elixir.
 
-For other languages, an Enumeration is a user-defined type that consists of a set of several named constants that are known as Enumerators.  
+An Enumeration is a user-defined type that consists of a set of several named
+constants that are known as Enumerators.  
 The purpose of SimpleEnum is to provide an equivalent for the Elixir language.
 
-SimpleEnum is
+SimpleEnum is:
 
-- **fast**: being based on a macro system, access to the Enum will be resolved at compile time when it is possible (see. [Fast vs Slow access](guides/fast_vs_slow_access.md))
-- **simple**: The use of the library has been designed to be as simple as possible for a developer to use. In addition to providing the Enums, it automatically defines their [types](guides/enum_types.md) and provides an [introspection system](guides/introspection.md).
+- **fast**: being based on a macro system, access to the Enum will be resolved
+at compile time when it is possible (see. [Fast vs Slow access](guides/fast_vs_slow_access.md))
+- **simple**: The use of the library has been designed to be as simple as possible
+for a developer to use. In addition to providing the Enums, it automatically defines their
+[types](guides/enum_types.md) and provides an [introspection system](guides/introspection.md).
 
 ## Installation
 

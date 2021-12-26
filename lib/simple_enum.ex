@@ -57,6 +57,7 @@ defmodule SimpleEnum do
       unquote(def_fast_arity_1())
       unquote(def_fast_arity_2())
 
+      # Maybe if would be better to use __before_compile__ to append these functions?
       if not Module.defines?(__MODULE__, {:slow_arity_1, 4}) do
         unquote(def_slow_arity_1())
         unquote(def_slow_arity_2())
@@ -165,12 +166,12 @@ defmodule SimpleEnum do
         keys = Keyword.keys(fields)
         values = Keyword.values(fields)
 
-        value_error = """
-        invalid value #{inspect(expanded_val)} for Enum #{enum_name}/1. \
-        Expected one of #{inspect(List.flatten([keys | values]))}
-        """
-
         quote do
+          value_error = """
+          invalid value #{inspect(unquote(expanded_val))} for Enum #{unquote(enum_name)}/1. \
+          Expected one of #{inspect(List.flatten([unquote(keys) | unquote(values)]))}
+          """
+
           case unquote(expanded_val) do
             ## Introspecton (cf. Fast Access for more details)
             :__keys__ -> unquote(keys)
@@ -180,7 +181,7 @@ defmodule SimpleEnum do
             x when x in unquote(keys) -> Keyword.fetch!(unquote(fields), x)
             x when x in unquote(values) -> Map.fetch!(unquote(fields_rev), x)
             ## Error handling
-            x -> raise ArgumentError, unquote(value_error)
+            x -> raise ArgumentError, value_error
           end
         end
       end
@@ -193,14 +194,17 @@ defmodule SimpleEnum do
         keys = Keyword.keys(fields)
         values = Keyword.values(fields)
 
-        value_error = """
-        invalid value #{inspect(value)} for Enum #{enum_name}/2. \
-        Expected one of #{inspect(List.flatten([keys | values]))}
-        """
-
-        type_error = "invalid type #{inspect(type)}. Expected one of #{inspect(@types)}"
-
         quote do
+          value_error = """
+          invalid value #{inspect(unquote(value))} for Enum #{unquote(enum_name)}/2. \
+          Expected one of #{inspect(List.flatten([unquote(keys) | unquote(values)]))}
+          """
+
+          type_error = """
+          invalid type #{inspect(unquote(type))}. Expected one of \
+          #{inspect(unquote(@types))}
+          """
+
           case unquote(expanded_tuple) do
             ## Slow/Runtime Access (cf. Fast Access for more details)
             {x, :key} when x in unquote(keys) -> x
@@ -210,8 +214,8 @@ defmodule SimpleEnum do
             {x, :tuple} when x in unquote(keys) -> {x, Keyword.fetch!(unquote(fields), x)}
             {x, :tuple} when x in unquote(values) -> {Map.fetch!(unquote(fields_rev), x), x}
             ## Error handling
-            {_, t} when t not in unquote(@types) -> raise ArgumentError, unquote(type_error)
-            {x, _} -> raise ArgumentError, unquote(value_error)
+            {_, t} when t not in unquote(@types) -> raise ArgumentError, type_error
+            {x, _} -> raise ArgumentError, value_error
           end
         end
       end

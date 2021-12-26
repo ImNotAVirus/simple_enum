@@ -70,9 +70,9 @@ iex> MyEnums.day("MONN")
 ** (ArgumentError) invalid value "MONN" for Enum MyEnums.day/1. Expected one of [:monday, :tuesday, :wednesday, "MON", "TUE", "WED"]
 ```
 
-Full documentation can be found at [https://hexdocs.pm/simple_enum](https://hexdocs.pm/simple_enum).
-
 <!-- MDOC !-->
+
+Full documentation can be found at [https://hexdocs.pm/simple_enum](https://hexdocs.pm/simple_enum).
 
 ## Copyright and License
 

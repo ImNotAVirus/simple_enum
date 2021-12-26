@@ -23,9 +23,9 @@
 
 ## Documentation
 
-- [ ] Basic usage (Struct.cast)
-- [ ] Can be used in guard
-- [ ] Slow vs Fast access
+- [x] Basic usage (Struct.cast)
+- [x] Can be used in guard
+- [x] Slow vs Fast access
 - [x] Ecto enum Example
 - [x] formatter.exs
 

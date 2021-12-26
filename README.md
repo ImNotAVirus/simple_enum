@@ -17,8 +17,8 @@ SimpleEnum is:
 
 - **fast**: being based on a macro system, access to the Enum will be resolved
 at compile time when it is possible (see. [Fast vs Slow access](guides/fast_vs_slow_access.md))
-- **simple**: The use of the library has been designed to be as simple as possible
-for a developer to use. In addition to providing the Enums, it automatically defines their
+- **simple**: the use of the library has been designed to be as simple as possible
+for a developer to use. In addition to providing Enums, it automatically defines their
 [types](guides/enum_types.md) and provides an [introspection system](guides/introspection.md).
 
 ## Installation

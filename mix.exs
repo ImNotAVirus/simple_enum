@@ -34,8 +34,8 @@ defmodule SimpleEnum.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_doc, "~> 0.26", only: [:dev, :docs], runtime: false},
-      {:excoveralls, "~> 0.14", only: :test}
+      {:ex_doc, "~> 0.38", only: [:dev, :docs], runtime: false},
+      {:excoveralls, "~> 0.18", only: :test}
     ]
   end
 

@@ -26,7 +26,7 @@ defmodule SimpleEnumTest do
         
         def __after_compile__(_env, bytecode) do
           {:ok, abstract_code} = typespecs_abstract_code(bytecode)
-          :io.fwrite('~s~n', [:erl_prettypr.format(:erl_syntax.form_list(abstract_code))])
+          :io.fwrite(~c"~s~n", [:erl_prettypr.format(:erl_syntax.form_list(abstract_code))])
         end
         
         # From https://github.com/elixir-lang/elixir/blob/main/lib/elixir/lib/code/typespec.ex#L156
@@ -73,7 +73,7 @@ defmodule SimpleEnumTest do
         
         def __after_compile__(_env, bytecode) do
           {:ok, abstract_code} = typespecs_abstract_code(bytecode)
-          :io.fwrite('~s~n', [:erl_prettypr.format(:erl_syntax.form_list(abstract_code))])
+          :io.fwrite(~c"~s~n", [:erl_prettypr.format(:erl_syntax.form_list(abstract_code))])
         end
         
         # From https://github.com/elixir-lang/elixir/blob/main/lib/elixir/lib/code/typespec.ex#L156
@@ -114,7 +114,7 @@ defmodule SimpleEnumTest do
         
         def __after_compile__(_env, bytecode) do
           {:ok, abstract_code} = typespecs_abstract_code(bytecode)
-          :io.fwrite('~s~n', [:erl_prettypr.format(:erl_syntax.form_list(abstract_code))])
+          :io.fwrite(~c"~s~n", [:erl_prettypr.format(:erl_syntax.form_list(abstract_code))])
         end
         
         # From https://github.com/elixir-lang/elixir/blob/main/lib/elixir/lib/code/typespec.ex#L156
@@ -278,6 +278,18 @@ defmodule SimpleEnumTest do
                    fn ->
                      Code.compile_string(code)
                    end
+    end
+
+    test "duplicate values are allowed" do
+      code = """
+      defmodule DuplicateAllowedValuesEnum do
+        import SimpleEnum, only: [defenum: 3]
+
+        defenum :test, [allow_duplicate: true], [{:a, 1}, :b, :c, {:d, 3}]
+      end
+      """
+
+      assert [{DuplicateAllowedValuesEnum, _}] = Code.compile_string(code)
     end
   end
 

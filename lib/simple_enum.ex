@@ -81,16 +81,17 @@ defmodule SimpleEnum do
       color(:__enumerators__) #=> [blue: 0, green: 1, red: 2]
 
   """
-  defmacro defenum(name, enumerators) do
+  defmacro defenum(name, opts \\ [], enumerators) do
     expanded_name = Macro.expand(name, __CALLER__)
     expanded_kv = Macro.prewalk(enumerators, &Macro.expand(&1, __CALLER__))
     enum_name = "#{inspect(__CALLER__.module)}.#{expanded_name}"
     fields = kv_to_fields(expanded_kv, enum_name, __CALLER__)
     keys = Keyword.keys(fields)
     values = Keyword.values(fields)
+    allow_duplicate = Keyword.get(opts, :allow_duplicate, false)
 
     raise_if_duplicate!("key", keys, enum_name, __CALLER__)
-    raise_if_duplicate!("value", values, enum_name, __CALLER__)
+    not allow_duplicate && raise_if_duplicate!("value", values, enum_name, __CALLER__)
 
     quote location: :keep do
       @name unquote(expanded_name)

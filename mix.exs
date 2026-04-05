@@ -59,7 +59,7 @@ defmodule SimpleEnum.MixProject do
 
   defp description() do
     """
-    A simple library that implements Enumerations in Elixir
+    A simple library that implements Enums in Elixir
     """
   end
 

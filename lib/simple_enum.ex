@@ -208,11 +208,21 @@ defmodule SimpleEnum do
       defmacro unquote(@helper_values_name)(), do: unquote(@values)
       defmacro unquote(@helper_enumerators_name)(), do: unquote(@fields)
 
-      defguard unquote(@helper_is_name)(value)
-               when value in unquote(@keys) or value in unquote(@values)
+      defmacro unquote(@helper_is_name)(value) do
+        keys = unquote(@keys)
+        values = unquote(@values)
+        quote(do: unquote(value) in unquote(keys) or unquote(value) in unquote(values))
+      end
 
-      defguard unquote(@helper_is_key_name)(value) when value in unquote(@keys)
-      defguard unquote(@helper_is_value_name)(value) when value in unquote(@values)
+      defmacro unquote(@helper_is_key_name)(value) do
+        keys = unquote(@keys)
+        quote(do: unquote(value) in unquote(keys))
+      end
+
+      defmacro unquote(@helper_is_value_name)(value) do
+        values = unquote(@values)
+        quote(do: unquote(value) in unquote(values))
+      end
     end
   end
 

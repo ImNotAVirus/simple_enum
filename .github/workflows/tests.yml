@@ -10,8 +10,8 @@ jobs:
     strategy:
       matrix:
         combo:
-          - elixir: '1.16'
-            otp: '25'
+          - elixir: '1.15'
+            otp: '24'
           - elixir: '1.19.5'
             otp: '28.4'
     env:

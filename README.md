@@ -3,7 +3,7 @@
 [![Hex.pm version](https://img.shields.io/hexpm/v/simple_enum.svg?style=flat)](https://hex.pm/packages/simple_enum)
 [![Hex.pm license](https://img.shields.io/hexpm/l/simple_enum.svg?style=flat)](https://hex.pm/packages/simple_enum)
 [![Build Status](https://github.com/ImNotAVirus/simple_enum/actions/workflows/tests.yml/badge.svg)](https://github.com/ImNotAVirus/simple_enum/actions/workflows/tests.yml)
-[![Coverage Status](https://coveralls.io/repos/github/ImNotAVirus/simple_enum/badge.svg?branch=master)](https://coveralls.io/github/ImNotAVirus/simple_enum?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/ImNotAVirus/simple_enum/badge.svg?branch=main)](https://coveralls.io/github/ImNotAVirus/simple_enum?branch=main)
 
 <!-- MDOC !-->
 

@@ -98,6 +98,28 @@ false
 
 Full documentation can be found at [https://hexdocs.pm/simple_enum](https://hexdocs.pm/simple_enum).
 
+## Known Issues
+
+### Slow compilation on Elixir 1.17 – 1.19
+
+Elixir 1.17 introduced a gradual set-theoretic type checker that suffers from
+combinatorial explosion (BDD blowup) when analyzing guards with large `in` lists.
+Since SimpleEnum generates `defguard` macros using `value in keys or value in values`,
+projects with many enums or enums with many values can experience significantly
+slower compilation times on these versions.
+
+In our benchmarks, compiling 100 enums of 10 values took **~15s** on Elixir 1.19
+versus **~3.5s** on Elixir 1.20.
+
+**This is fixed in Elixir 1.20** thanks to a rewrite of the type checker internals
+from DNF to BDD representation, with further optimizations using lazy BDDs.
+
+**References:**
+
+- [Lazy BDDs with eager literal differences](https://elixir-lang.org/blog/2026/03/19/lazy-bdds-with-eager-literal-differences/) — Official blog post explaining the problem and the fix
+- [elixir-lang/elixir#14693](https://github.com/elixir-lang/elixir/pull/14693) — BDD rewrite for maps, tuples, lists
+- [elixir-lang/elixir#14806](https://github.com/elixir-lang/elixir/pull/14806) — Lazy BDD structures for all types
+
 ## Copyright and License
 
 Copyright (c) 2021 DarkyZ aka NotAVirus.

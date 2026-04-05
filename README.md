@@ -122,6 +122,6 @@ from DNF to BDD representation, with further optimizations using lazy BDDs.
 
 ## Copyright and License
 
-Copyright (c) 2021 DarkyZ aka NotAVirus.
+Copyright (c) 2021-2026 DarkyZ aka NotAVirus.
 
 SimpleEnum source code is licensed under the [MIT License](LICENSE.md).

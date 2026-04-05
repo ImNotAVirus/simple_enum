@@ -23,6 +23,13 @@ defmodule SimpleEnum do
   [integer-based Enumeration](guides/integer_based_enum.md), you can check the
   corresponding guide.
 
+  ## Options
+
+   * `:allow_duplicate_keys` - when `true`, allows duplicate keys
+     in the enumerators list. Defaults to `false`.
+   * `:allow_duplicate_values` - when `true`, allows duplicate values
+     in the enumerators list. Defaults to `false`.
+
   The following macros are generated:
 
    * `name/1` for bidirectional key/value lookup
@@ -102,11 +109,14 @@ defmodule SimpleEnum do
     fields = kv_to_fields(expanded_kv, enum_name, __CALLER__)
     keys = Keyword.keys(fields)
     values = Keyword.values(fields)
-    allow_duplicate = Keyword.get(opts, :allow_duplicate, false)
+    allow_duplicate_keys = Keyword.get(opts, :allow_duplicate_keys, false)
+    allow_duplicate_values = Keyword.get(opts, :allow_duplicate_values, false)
 
-    raise_if_duplicate!("key", keys, enum_name, __CALLER__)
+    if !allow_duplicate_keys do
+      raise_if_duplicate!("key", keys, enum_name, __CALLER__)
+    end
 
-    if not allow_duplicate do
+    if !allow_duplicate_values do
       raise_if_duplicate!("value", values, enum_name, __CALLER__)
     end
 

@@ -32,7 +32,9 @@ If you defined custom guards like:
 - defguard is_color_value(value) when value in color(:__values__)
 ```
 
-You can remove them entirely, they are now generated automatically:
+You can remove them entirely, they are now generated automatically.
+
+The following guards are now generated automatically:
 
 - `is_color/1` - checks if a value is a valid key or value
 - `is_color_key/1` - checks if a value is a valid key
@@ -44,6 +46,8 @@ You can remove them entirely, they are now generated automatically:
   for compile-time access to enum data.
 - **Guards**: `is_name/1`, `is_name_key/1`, `is_name_value/1` guard macros
   generated automatically for each enum.
+- **Options**: `allow_duplicate_keys` and `allow_duplicate_values` for
+  fine-grained control over duplicate validation.
 
 ### Improvements
 

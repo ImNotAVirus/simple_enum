@@ -207,11 +207,23 @@ defmodule SimpleEnumTest do
       defmodule DuplicateAllowedValuesEnum do
         import SimpleEnum, only: [defenum: 3]
 
-        defenum :test, [allow_duplicate: true], [{:a, 1}, :b, :c, {:d, 3}]
+        defenum :test, [allow_duplicate_values: true], [{:a, 1}, :b, :c, {:d, 3}]
       end
       """
 
       assert [{DuplicateAllowedValuesEnum, _}] = Code.compile_string(code)
+    end
+
+    test "duplicate keys are allowed" do
+      code = """
+      defmodule DuplicateAllowedKeysEnum do
+        import SimpleEnum, only: [defenum: 3]
+
+        defenum :test, [allow_duplicate_keys: true], ~w(a b c a)a
+      end
+      """
+
+      assert [{DuplicateAllowedKeysEnum, _}] = Code.compile_string(code)
     end
   end
 

@@ -1,23 +1,31 @@
 defmodule SimpleEnum.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "1.0.0"
   @source_url "https://github.com/ImNotAVirus/simple_enum"
 
-  def project do
+  def project() do
     [
       app: :simple_enum,
       version: @version,
-      elixir: "~> 1.10",
+      elixir: "~> 1.15",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       consolidate_protocols: Mix.env() != :test,
       deps: deps(),
+      aliases: aliases(),
       package: package(),
       description: description(),
       docs: docs(),
-      test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: [
+      test_coverage: [tool: ExCoveralls]
+    ]
+  end
+
+  def cli() do
+    [
+      preferred_envs: [
         docs: :docs,
+        ci: :test,
         coveralls: :test,
         "coveralls.detail": :test,
         "coveralls.post": :test,
@@ -27,25 +35,35 @@ defmodule SimpleEnum.MixProject do
   end
 
   # Run "mix help compile.app" to learn about applications.
-  def application do
+  def application() do
     []
   end
 
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
   # Run "mix help deps" to learn about dependencies.
-  defp deps do
+  defp deps() do
     [
-      {:ex_doc, "~> 0.38", only: [:dev, :docs], runtime: false},
-      {:excoveralls, "~> 0.18", only: :test}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.40", only: [:dev, :docs], runtime: false},
+      {:excoveralls, "~> 0.18", only: :test, runtime: false}
     ]
   end
 
-  defp description do
+  defp aliases() do
+    [
+      ci: ["format --check-formatted", "credo --strict", "test"]
+    ]
+  end
+
+  defp description() do
     """
     A simple library that implements Enumerations in Elixir
     """
   end
 
-  defp package do
+  defp package() do
     [
       maintainers: ["DarkyZ aka NotAVirus"],
       licenses: ["MIT"],
@@ -65,12 +83,12 @@ defmodule SimpleEnum.MixProject do
     ]
   end
 
-  defp extras do
+  defp extras() do
     [
       "guides/integer_based_enum.md",
       "guides/string_based_enum.md",
       "guides/enum_types.md",
-      "guides/introspection.md",
+      "guides/helpers.md",
       "guides/fast_vs_slow_access.md",
       "CHANGELOG.md",
       "LICENSE.md",
@@ -78,7 +96,7 @@ defmodule SimpleEnum.MixProject do
     ]
   end
 
-  defp groups_for_extras do
+  defp groups_for_extras() do
     [
       Guides: ~r/guides\/[^\/]+\.md/,
       Others: ~r/(CHANGELOG|LICENSE)\.md/

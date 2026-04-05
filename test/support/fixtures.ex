@@ -1,4 +1,5 @@
 defmodule MyApp.Enums do
+  @moduledoc false
   import SimpleEnum, only: [defenum: 2]
 
   defenum :color, ~w(blue green red)a

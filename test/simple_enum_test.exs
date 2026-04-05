@@ -1,143 +1,65 @@
-Code.require_file("fixtures.exs", __DIR__)
-
 defmodule SimpleEnumTest do
   use ExUnit.Case, async: true
 
-  import ExUnit.CaptureIO
-
   require SimpleEnum
+  require MyApp.Enums
+
   # doctest SimpleEnum
 
-  require MyApp.Enums
+  ## Tests
 
   describe "defenum/2" do
     test "define @type enum" do
       code = """
       defmodule ExtractGlobalTypeEnum do
         import SimpleEnum, only: [defenum: 2]
-        
-        # Little trick to get module bytecode
-        # I don't know if there is a better way to do that
-        # Maybe use Compiler Tracing ?
-        @after_compile __MODULE__
 
         defenum :color, ~w(blue green red)a
         defenum :day, monday: "MON", tuesday: "TUE", wednesday: "WED"
-        
-        def __after_compile__(_env, bytecode) do
-          {:ok, abstract_code} = typespecs_abstract_code(bytecode)
-          :io.fwrite(~c"~s~n", [:erl_prettypr.format(:erl_syntax.form_list(abstract_code))])
-        end
-        
-        # From https://github.com/elixir-lang/elixir/blob/main/lib/elixir/lib/code/typespec.ex#L156
-        defp typespecs_abstract_code(binary) do
-          with {:ok, {_, [debug_info: {:debug_info_v1, _backend, data}]}} <-
-                 :beam_lib.chunks(binary, [:debug_info]),
-               {:elixir_v1, %{}, specs} <- data do
-            {:ok, specs}
-          else
-            _ -> :error
-          end
-        end
       end
       """
 
-      log = capture_io(fn -> Code.compile_string(code) end)
+      types = compile_and_fetch_typespecs(code)
 
-      ## Erlang syntax
-      assert log =~ "-export_type([day/0])."
+      # color type: :blue | :green | :red | 0 | 1 | 2
+      assert extract_atoms(types[:color]) == [:blue, :green, :red]
+      assert extract_integers(types[:color]) == [0, 1, 2]
 
-      assert log =~ """
-             -type day() :: monday |
-                            tuesday |
-                            wednesday |
-                            'Elixir.String':t().
-             """
-
-      assert log =~ "-export_type([color/0])."
-      assert log =~ "-type color() :: blue | green | red | 0 | 1 | 2."
+      # day type: :monday | :tuesday | :wednesday | String.t()
+      assert extract_atoms(types[:day]) == [:monday, :tuesday, :wednesday]
+      assert has_remote_type?(types[:day], String, :t)
     end
 
     test "define @type enum_keys" do
       code = """
       defmodule ExtractKeysTypeEnum do
         import SimpleEnum, only: [defenum: 2]
-        
-        # Little trick to get module bytecode
-        # I don't know if there is a better way to do that
-        # Maybe use Compiler Tracing ?
-        @after_compile __MODULE__
 
         defenum :color, ~w(blue green red)a
         defenum :day, monday: "MON", tuesday: "TUE", wednesday: "WED"
-        
-        def __after_compile__(_env, bytecode) do
-          {:ok, abstract_code} = typespecs_abstract_code(bytecode)
-          :io.fwrite(~c"~s~n", [:erl_prettypr.format(:erl_syntax.form_list(abstract_code))])
-        end
-        
-        # From https://github.com/elixir-lang/elixir/blob/main/lib/elixir/lib/code/typespec.ex#L156
-        defp typespecs_abstract_code(binary) do
-          with {:ok, {_, [debug_info: {:debug_info_v1, _backend, data}]}} <-
-                 :beam_lib.chunks(binary, [:debug_info]),
-               {:elixir_v1, %{}, specs} <- data do
-            {:ok, specs}
-          else
-            _ -> :error
-          end
-        end
       end
       """
 
-      log = capture_io(fn -> Code.compile_string(code) end)
+      types = compile_and_fetch_typespecs(code)
 
-      ## Erlang syntax
-      assert log =~ "-export_type([day_keys/0])."
-      assert log =~ "-type day_keys() :: monday | tuesday | wednesday."
-
-      assert log =~ "-export_type([color_keys/0])."
-      assert log =~ "-type color_keys() :: blue | green | red."
+      assert extract_atoms(types[:day_keys]) == [:monday, :tuesday, :wednesday]
+      assert extract_atoms(types[:color_keys]) == [:blue, :green, :red]
     end
 
     test "define @type enum_values" do
       code = """
       defmodule ExtractValuesTypeEnum do
         import SimpleEnum, only: [defenum: 2]
-        
-        # Little trick to get module bytecode
-        # I don't know if there is a better way to do that
-        # Maybe use Compiler Tracing ?
-        @after_compile __MODULE__
 
         defenum :color, ~w(blue green red)a
         defenum :day, monday: "MON", tuesday: "TUE", wednesday: "WED"
-        
-        def __after_compile__(_env, bytecode) do
-          {:ok, abstract_code} = typespecs_abstract_code(bytecode)
-          :io.fwrite(~c"~s~n", [:erl_prettypr.format(:erl_syntax.form_list(abstract_code))])
-        end
-        
-        # From https://github.com/elixir-lang/elixir/blob/main/lib/elixir/lib/code/typespec.ex#L156
-        defp typespecs_abstract_code(binary) do
-          with {:ok, {_, [debug_info: {:debug_info_v1, _backend, data}]}} <-
-                 :beam_lib.chunks(binary, [:debug_info]),
-               {:elixir_v1, %{}, specs} <- data do
-            {:ok, specs}
-          else
-            _ -> :error
-          end
-        end
       end
       """
 
-      log = capture_io(fn -> Code.compile_string(code) end)
+      types = compile_and_fetch_typespecs(code)
 
-      ## Erlang syntax
-      assert log =~ "-export_type([day_values/0])."
-      assert log =~ "-type day_values() :: 'Elixir.String':t()."
-
-      assert log =~ "-export_type([color_values/0])."
-      assert log =~ "-type color_values() :: 0 | 1 | 2."
+      assert has_remote_type?(types[:day_values], String, :t)
+      assert extract_integers(types[:color_values]) == [0, 1, 2]
     end
   end
 
@@ -293,27 +215,18 @@ defmodule SimpleEnumTest do
     end
   end
 
-  describe "metadata helpers" do
+  describe "helpers" do
     test "with compile time access (fast)" do
-      assert MyApp.Enums.color(:__keys__) == [:blue, :green, :red]
-      assert MyApp.Enums.color(:__values__) == [0, 1, 2]
-      assert MyApp.Enums.color(:__enumerators__) == [blue: 0, green: 1, red: 2]
-    end
-
-    test "with runtime access (slow)" do
-      type1 = :__keys__
-      assert MyApp.Enums.color(type1) == [:blue, :green, :red]
-      type2 = :__values__
-      assert MyApp.Enums.color(type2) == [0, 1, 2]
-      type3 = :__enumerators__
-      assert MyApp.Enums.color(type3) == [blue: 0, green: 1, red: 2]
+      assert MyApp.Enums.color_keys() == [:blue, :green, :red]
+      assert MyApp.Enums.color_values() == [0, 1, 2]
+      assert MyApp.Enums.color_enumerators() == [blue: 0, green: 1, red: 2]
     end
 
     test "for default integer values" do
-      assert MyApp.Enums.state(:__keys__) == [:active, :inactive, :unknown, :default]
-      assert MyApp.Enums.state(:__values__) == [1, 2, -1, 0]
+      assert MyApp.Enums.state_keys() == [:active, :inactive, :unknown, :default]
+      assert MyApp.Enums.state_values() == [1, 2, -1, 0]
 
-      assert MyApp.Enums.state(:__enumerators__) == [
+      assert MyApp.Enums.state_enumerators() == [
                active: 1,
                inactive: 2,
                unknown: -1,
@@ -322,10 +235,10 @@ defmodule SimpleEnumTest do
     end
 
     test "for default string values" do
-      assert MyApp.Enums.day(:__keys__) == [:monday, :tuesday, :wednesday]
-      assert MyApp.Enums.day(:__values__) == ["MON", "TUE", "WED"]
+      assert MyApp.Enums.day_keys() == [:monday, :tuesday, :wednesday]
+      assert MyApp.Enums.day_values() == ["MON", "TUE", "WED"]
 
-      assert MyApp.Enums.day(:__enumerators__) == [
+      assert MyApp.Enums.day_enumerators() == [
                monday: "MON",
                tuesday: "TUE",
                wednesday: "WED"
@@ -335,10 +248,107 @@ defmodule SimpleEnumTest do
     test "can be used in guards" do
       got =
         case 2 do
-          x when x in MyApp.Enums.color(:__values__) -> :ok
+          x when x in MyApp.Enums.color_values() -> :ok
         end
 
       assert got == :ok
+    end
+  end
+
+  describe "is_name/1 guard" do
+    test "with compile time access (fast)" do
+      assert MyApp.Enums.is_color(:blue) == true
+      assert MyApp.Enums.is_color(0) == true
+      assert MyApp.Enums.is_color(:nope) == false
+      assert MyApp.Enums.is_color(999) == false
+    end
+
+    test "works with string-based enums" do
+      assert MyApp.Enums.is_day(:monday) == true
+      assert MyApp.Enums.is_day("MON") == true
+      assert MyApp.Enums.is_day(:nope) == false
+    end
+
+    test "can be used in guards" do
+      got =
+        case :red do
+          x when MyApp.Enums.is_color(x) -> :ok
+          _ -> :nope
+        end
+
+      assert got == :ok
+
+      got =
+        case :invalid do
+          x when MyApp.Enums.is_color(x) -> :ok
+          _ -> :nope
+        end
+
+      assert got == :nope
+    end
+  end
+
+  describe "is_name_key/1 guard" do
+    test "matches keys only" do
+      assert MyApp.Enums.is_color_key(:blue) == true
+      assert MyApp.Enums.is_color_key(:red) == true
+      assert MyApp.Enums.is_color_key(0) == false
+      assert MyApp.Enums.is_color_key(:nope) == false
+    end
+
+    test "works with string-based enums" do
+      assert MyApp.Enums.is_day_key(:monday) == true
+      assert MyApp.Enums.is_day_key("MON") == false
+    end
+
+    test "can be used in guards" do
+      got =
+        case :red do
+          x when MyApp.Enums.is_color_key(x) -> :ok
+          _ -> :nope
+        end
+
+      assert got == :ok
+
+      got =
+        case 0 do
+          x when MyApp.Enums.is_color_key(x) -> :ok
+          _ -> :nope
+        end
+
+      assert got == :nope
+    end
+  end
+
+  describe "is_name_value/1 guard" do
+    test "matches values only" do
+      assert MyApp.Enums.is_color_value(0) == true
+      assert MyApp.Enums.is_color_value(2) == true
+      assert MyApp.Enums.is_color_value(:blue) == false
+      assert MyApp.Enums.is_color_value(999) == false
+    end
+
+    test "works with string-based enums" do
+      assert MyApp.Enums.is_day_value("MON") == true
+      assert MyApp.Enums.is_day_value(:monday) == false
+    end
+
+    test "can be used in guards" do
+      got =
+        case 2 do
+          x when MyApp.Enums.is_color_value(x) -> :ok
+          _ -> :nope
+        end
+
+      assert got == :ok
+
+      got =
+        case :red do
+          x when MyApp.Enums.is_color_value(x) -> :ok
+          _ -> :nope
+        end
+
+      assert got == :nope
     end
   end
 
@@ -464,4 +474,51 @@ defmodule SimpleEnumTest do
       end
     end
   end
+
+  ## Private functions
+
+  # Compiles a module string with debug_info enabled and extracts
+  # typespec abstract code directly from the returned bytecode.
+  defp compile_and_fetch_typespecs(code) do
+    prev = Code.compiler_options(debug_info: true)
+
+    try do
+      [{_mod, bytecode}] = Code.compile_string(code)
+
+      {:ok, {_, [debug_info: {:debug_info_v1, _backend, data}]}} =
+        :beam_lib.chunks(bytecode, [:debug_info])
+
+      {:elixir_v1, %{}, specs} = data
+
+      # Build a map of type_name => type_definition from abstract code
+      for {:attribute, _, :type, {name, definition, []}} <- specs, into: %{} do
+        {name, definition}
+      end
+    after
+      Code.compiler_options(debug_info: prev[:debug_info])
+    end
+  end
+
+  # Extract all atom names from a union type AST
+  defp extract_atoms({:type, _, :union, members}) do
+    for {:atom, _, name} <- members, do: name
+  end
+
+  # Extract all integer values from a union type AST
+  defp extract_integers({:type, _, :union, members}) do
+    for {:integer, _, val} <- members, do: val
+  end
+
+  # Check if a union type contains a remote type reference
+  defp has_remote_type?({:type, _, :union, members}, mod, fun) do
+    Enum.any?(members, fn
+      {:remote_type, _, [{:atom, _, ^mod}, {:atom, _, ^fun}, []]} -> true
+      _ -> false
+    end)
+  end
+
+  defp has_remote_type?({:remote_type, _, [{:atom, _, mod}, {:atom, _, fun}, []]}, mod, fun),
+    do: true
+
+  defp has_remote_type?(_, _, _), do: false
 end

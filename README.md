@@ -19,7 +19,7 @@ SimpleEnum is:
 at compile time when it is possible (see. [Fast vs Slow access](guides/fast_vs_slow_access.md))
 - **simple**: the use of the library has been designed to be as simple as possible
 for a developer to use. In addition to providing Enums, it automatically defines their
-[types](guides/enum_types.md) and provides an [introspection system](guides/introspection.md).
+[types](guides/enum_types.md), [helpers and guards](guides/helpers.md).
 
 ## Installation
 
@@ -30,7 +30,7 @@ in `mix.exs`:
 # my_app/mix.exs
 def deps do
   [
-    {:simple_enum, "~> 0.1"}
+    {:simple_enum, "~> 1.0"}
   ]
 end
 ```
@@ -72,6 +72,26 @@ iex> MyEnums.day("MON")
 :monday
 iex> MyEnums.day("MONN")
 ** (ArgumentError) invalid value "MONN" for Enum MyEnums.day/1. Expected one of [:monday, :tuesday, :wednesday, "MON", "TUE", "WED"]
+
+iex> MyEnums.color_keys()
+[:blue, :green, :red]
+iex> MyEnums.color_values()
+[0, 1, 2]
+iex> MyEnums.color_enumerators()
+[blue: 0, green: 1, red: 2]
+
+iex> MyEnums.is_color(:blue)
+true
+iex> MyEnums.is_color(:nope)
+false
+iex> MyEnums.is_color_key(:blue)
+true
+iex> MyEnums.is_color_key(0)
+false
+iex> MyEnums.is_color_value(0)
+true
+iex> MyEnums.is_color_value(:blue)
+false
 ```
 
 <!-- MDOC !-->

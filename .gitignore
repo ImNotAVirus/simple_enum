@@ -24,3 +24,5 @@ simple_enum-*.tar
 
 # Ignore some local files
 /TODOLIST.md
+
+/.vscode/

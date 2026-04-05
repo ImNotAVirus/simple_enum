@@ -10,23 +10,19 @@ jobs:
     strategy:
       matrix:
         combo:
-          - elixir: 'v1.10'
-            otp: '23'
-          - elixir: 'v1.11'
-            otp: '23'
-          - elixir: 'v1.12'
-            otp: '23'
-          - elixir: 'v1.13'
+          - elixir: '1.15'
             otp: '24'
+          - elixir: '1.19.5'
+            otp: '28.4'
     env:
       MIX_ENV: test
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ matrix.combo.otp }}
           elixir-version: ${{ matrix.combo.elixir }}
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
          path: deps
          key: ${{ runner.os }}-${{ matrix.combo.otp }}-${{ matrix.combo.elixir }}-${{ hashFiles(format('{0}{1}', github.workspace, '/mix.lock')) }}
@@ -34,6 +30,7 @@ jobs:
            ${{ runner.os }}-${{ matrix.combo.otp }}-${{ matrix.combo.elixir }}-
       - run: mix deps.get
       - run: mix format --dry-run --check-formatted
+      - run: mix compile --warnings-as-errors
       - run: mix test --trace
       - run: mix coveralls.github
         env:

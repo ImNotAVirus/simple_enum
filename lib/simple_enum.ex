@@ -25,8 +25,14 @@ defmodule SimpleEnum do
 
   The following macros are generated:
 
-   * `name/1` to access a key, a value or to inspect an Enumeration
+   * `name/1` for bidirectional key/value lookup
    * `name/2` to access a key, a value or its tuple by specifying the return type
+   * `name_keys/0` to get the list of all keys
+   * `name_values/0` to get the list of all values
+   * `name_enumerators/0` to get the keyword list of all enumerators
+   * `is_name/1` guard to check if a value is a valid key or value
+   * `is_name_key/1` guard to check if a value is a valid key
+   * `is_name_value/1` guard to check if a value is a valid value
 
   The following types are generated:
 
@@ -54,7 +60,7 @@ defmodule SimpleEnum do
       # Import the module to make the color macros locally available
       import MyApp.Enums
       
-      # To lookup the corresponding value
+      # Bidirectional key/value lookup
       color(:blue)    #=> 0
       color(:green)   #=> 1
       color(:red)     #=> 2
@@ -62,23 +68,31 @@ defmodule SimpleEnum do
       color(1)        #=> :green
       color(2)        #=> :red
       
-      # To lookup for the key regardless of the given value
-      color(:red, :key) #=> :red
-      color(2, :key)    #=> :red
-      
-      # To lookup for the value regardless of the given value
+      # Lookup with explicit return type
+      color(:red, :key)   #=> :red
+      color(2, :key)      #=> :red
       color(:red, :value) #=> 2
       color(2, :value)    #=> 2
-      
-      # To get the key/value pair of the given value
       color(:red, :tuple) #=> {:red, 2}
       color(2, :tuple)    #=> {:red, 2}
 
-  Is also possible to inspect the Enumeration by using introspection helpers :
+  Helpers allow inspecting the Enumeration:
 
-      color(:__keys__)        #=> [:blue, :green, :red]
-      color(:__values__)      #=> [0, 1, 2]
-      color(:__enumerators__) #=> [blue: 0, green: 1, red: 2]
+      color_keys()         #=> [:blue, :green, :red]
+      color_values()       #=> [0, 1, 2]
+      color_enumerators()  #=> [blue: 0, green: 1, red: 2]
+
+  Guards are also generated to check membership:
+
+      is_color(:blue) #=> true
+      is_color(0)     #=> true
+      is_color(:nope) #=> false
+
+      is_color_key(:blue) #=> true
+      is_color_key(0)     #=> false
+
+      is_color_value(0)     #=> true
+      is_color_value(:blue) #=> false
 
   """
   defmacro defenum(name, opts \\ [], enumerators) do
@@ -91,7 +105,10 @@ defmodule SimpleEnum do
     allow_duplicate = Keyword.get(opts, :allow_duplicate, false)
 
     raise_if_duplicate!("key", keys, enum_name, __CALLER__)
-    not allow_duplicate && raise_if_duplicate!("value", values, enum_name, __CALLER__)
+
+    if not allow_duplicate do
+      raise_if_duplicate!("value", values, enum_name, __CALLER__)
+    end
 
     quote location: :keep do
       @name unquote(expanded_name)
@@ -99,18 +116,20 @@ defmodule SimpleEnum do
       @fields unquote(fields)
       @keys unquote(keys)
       @values unquote(values)
-      @types [:key, :value, :tuple]
-
       @fields_rev @fields
                   |> Enum.map(fn {k, v} -> {v, k} end)
-                  |> Enum.into(%{})
+                  |> Map.new()
                   |> Macro.escape()
 
       unquote(types())
+      unquote(def_helpers())
       unquote(def_fast_arity_1())
       unquote(def_fast_arity_2())
 
-      # Maybe if would be better to use __before_compile__ to append these functions?
+      # slow_arity functions are shared across all enums in a module.
+      # They must be defined inline (not via @before_compile) because
+      # they are called during macro expansion of name/1 and name/2,
+      # which may happen before module compilation completes.
       if not Module.defines?(__MODULE__, {:slow_arity_1, 4}) do
         unquote(def_slow_arity_1())
         unquote(def_slow_arity_2())
@@ -118,11 +137,15 @@ defmodule SimpleEnum do
     end
   end
 
-  ## Define helpers
+  ## Macro generators
 
   defp types() do
     quote unquote: false, location: :keep do
-      keys_ast = @keys |> Enum.reverse() |> Enum.reduce(&{:|, [], [&1, &2]})
+      keys_ast =
+        @keys
+        |> Enum.reverse()
+        |> Enum.reduce(&{:|, [], [&1, &2]})
+
       last_key = Enum.at(@keys, -1)
 
       # @type name_keys :: :key1 | :key2 | :key3
@@ -134,7 +157,6 @@ defmodule SimpleEnum do
 
         string_t_ast = {{:., [], [{:__aliases__, [alias: false], [:String]}, :t]}, [], []}
 
-        # @type name :: :key1 | :key2 | :key3 | String.t()
         @type unquote(Macro.var(@name, __MODULE__)) ::
                 unquote(
                   Macro.postwalk(keys_ast, fn
@@ -143,7 +165,10 @@ defmodule SimpleEnum do
                   end)
                 )
       else
-        values_ast = @values |> Enum.reverse() |> Enum.reduce(&{:|, [], [&1, &2]})
+        values_ast =
+          @values
+          |> Enum.reverse()
+          |> Enum.reduce(&{:|, [], [&1, &2]})
 
         # @type name_values :: 1 | 2 | 3
         @type unquote(Macro.var(:"#{@name}_values", __MODULE__)) :: unquote(values_ast)
@@ -160,25 +185,36 @@ defmodule SimpleEnum do
     end
   end
 
+  defp def_helpers() do
+    quote unquote: false, location: :keep do
+      @helper_keys_name :"#{@name}_keys"
+      @helper_values_name :"#{@name}_values"
+      @helper_enumerators_name :"#{@name}_enumerators"
+      @helper_is_name :"is_#{@name}"
+      @helper_is_key_name :"is_#{@name}_key"
+      @helper_is_value_name :"is_#{@name}_value"
+
+      defmacro unquote(@helper_keys_name)(), do: unquote(@keys)
+      defmacro unquote(@helper_values_name)(), do: unquote(@values)
+      defmacro unquote(@helper_enumerators_name)(), do: unquote(@fields)
+
+      defguard unquote(@helper_is_name)(value)
+               when value in unquote(@keys) or value in unquote(@values)
+
+      defguard unquote(@helper_is_key_name)(value) when value in unquote(@keys)
+      defguard unquote(@helper_is_value_name)(value) when value in unquote(@values)
+    end
+  end
+
   defp def_fast_arity_1() do
     quote unquote: false, location: :keep do
       defmacro unquote(@name)(value) do
         case Macro.expand(value, __CALLER__) do
-          ## Introspecton
-          # def name(:__keys__), do: @keys
-          :__keys__ -> unquote(@keys)
-          # def name(:__values__), do: @values
-          :__values__ -> unquote(@values)
-          # def name(:__enumerators__), do: @fields
-          :__enumerators__ -> unquote(@fields)
-          #
-          ## Fast/Compile time Access
-          # def name(key), do: value
+          # Compile-time lookup: key -> value
           x when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
-          # def name(value), do: key
+          # Compile-time lookup: value -> key
           x when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
-          #
-          ## Callback to slow access
+          # Runtime lookup
           x -> slow_arity_1(x, @fields, @fields_rev, @enum_name)
         end
       end
@@ -192,21 +228,13 @@ defmodule SimpleEnum do
         expanded_type = Macro.expand(type, __CALLER__)
 
         case {expanded_val, expanded_type} do
-          ## Fast/Compile time Access
-          # def name(key, :key), do: key
           {x, :key} when x in unquote(@keys) -> x
-          # def name(value, :value), do: value
           {x, :value} when x in unquote(@values) -> x
-          # def name(value, :key), do: key
           {x, :key} when x in unquote(@values) -> Map.fetch!(unquote(@fields_rev), x)
-          # def name(key, :value), do: value
           {x, :value} when x in unquote(@keys) -> Keyword.fetch!(unquote(@fields), x)
-          # def name(key, :tuple), do: {key, value}
           {x, :tuple} when x in unquote(@keys) -> {x, Keyword.fetch!(unquote(@fields), x)}
-          # def name(value, :tuple), do: {key, value}
           {x, :tuple} when x in unquote(@values) -> {Map.fetch!(unquote(@fields_rev), x), x}
-          #
-          ## Callback to slow access
+          # Runtime lookup
           x -> slow_arity_2(x, @fields, @fields_rev, @enum_name)
         end
       end
@@ -220,55 +248,59 @@ defmodule SimpleEnum do
         values = Keyword.values(fields)
 
         quote do
-          value_error = """
-          invalid value #{inspect(unquote(expanded_val))} for Enum #{unquote(enum_name)}/1. \
-          Expected one of #{inspect(List.flatten([unquote(keys) | unquote(values)]))}
-          """
-
           case unquote(expanded_val) do
-            ## Introspecton (cf. Fast Access for more details)
-            :__keys__ -> unquote(keys)
-            :__values__ -> unquote(values)
-            :__enumerators__ -> unquote(fields)
-            ## Slow/Runtime Access (cf. Fast Access for more details)
-            x when x in unquote(keys) -> Keyword.fetch!(unquote(fields), x)
-            x when x in unquote(values) -> Map.fetch!(unquote(fields_rev), x)
-            ## Error handling
-            x -> raise ArgumentError, value_error
+            x when x in unquote(keys) ->
+              Keyword.fetch!(unquote(fields), x)
+
+            x when x in unquote(values) ->
+              Map.fetch!(unquote(fields_rev), x)
+
+            x ->
+              raise ArgumentError,
+                    "invalid value #{inspect(x)} for Enum #{unquote(enum_name)}/1." <>
+                      " Expected one of #{inspect(unquote(keys) ++ unquote(values))}"
           end
         end
       end
     end
   end
 
+  # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
   defp def_slow_arity_2() do
     quote unquote: false, location: :keep, generated: true do
       defp slow_arity_2({value, type} = expanded_tuple, fields, fields_rev, enum_name) do
         keys = Keyword.keys(fields)
         values = Keyword.values(fields)
+        valid_types = [:key, :value, :tuple]
 
         quote do
-          value_error = """
-          invalid value #{inspect(unquote(value))} for Enum #{unquote(enum_name)}/2. \
-          Expected one of #{inspect(List.flatten([unquote(keys) | unquote(values)]))}
-          """
-
-          type_error = """
-          invalid type #{inspect(unquote(type))}. Expected one of \
-          #{inspect(unquote(@types))}
-          """
-
           case unquote(expanded_tuple) do
-            ## Slow/Runtime Access (cf. Fast Access for more details)
-            {x, :key} when x in unquote(keys) -> x
-            {x, :value} when x in unquote(values) -> x
-            {x, :key} when x in unquote(values) -> Map.fetch!(unquote(fields_rev), x)
-            {x, :value} when x in unquote(keys) -> Keyword.fetch!(unquote(fields), x)
-            {x, :tuple} when x in unquote(keys) -> {x, Keyword.fetch!(unquote(fields), x)}
-            {x, :tuple} when x in unquote(values) -> {Map.fetch!(unquote(fields_rev), x), x}
-            ## Error handling
-            {_, t} when t not in unquote(@types) -> raise ArgumentError, type_error
-            {x, _} -> raise ArgumentError, value_error
+            {x, :key} when x in unquote(keys) ->
+              x
+
+            {x, :value} when x in unquote(values) ->
+              x
+
+            {x, :key} when x in unquote(values) ->
+              Map.fetch!(unquote(fields_rev), x)
+
+            {x, :value} when x in unquote(keys) ->
+              Keyword.fetch!(unquote(fields), x)
+
+            {x, :tuple} when x in unquote(keys) ->
+              {x, Keyword.fetch!(unquote(fields), x)}
+
+            {x, :tuple} when x in unquote(values) ->
+              {Map.fetch!(unquote(fields_rev), x), x}
+
+            {_, t} when t not in unquote(valid_types) ->
+              raise ArgumentError,
+                    "invalid type #{inspect(t)}. Expected one of #{inspect(unquote(valid_types))}"
+
+            {x, _} ->
+              raise ArgumentError,
+                    "invalid value #{inspect(x)} for Enum #{unquote(enum_name)}/2." <>
+                      " Expected one of #{inspect(unquote(keys) ++ unquote(values))}"
           end
         end
       end
@@ -321,7 +353,7 @@ defmodule SimpleEnum do
           line: caller.line,
           description: "invalid fields #{inspect(value)} for integer-based enum #{enum_name}"
     end)
-    |> Kernel.elem(0)
+    |> elem(0)
     |> Enum.reverse()
   end
 
@@ -343,11 +375,11 @@ defmodule SimpleEnum do
   defp raise_if_duplicate!(type, list, enum_name, caller) do
     dups = list -- Enum.uniq(list)
 
-    if length(dups) > 0 do
+    if dups != [] do
       raise CompileError,
         file: caller.file,
         line: caller.line,
-        description: "duplicate #{type} #{inspect(Enum.at(dups, 0))} found in enum #{enum_name}"
+        description: "duplicate #{type} #{inspect(hd(dups))} found in enum #{enum_name}"
     end
   end
 end

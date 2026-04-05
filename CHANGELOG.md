@@ -7,7 +7,7 @@
 - **Removed legacy introspection via `name/1`**: `color(:__keys__)`,
   `color(:__values__)` and `color(:__enumerators__)` no longer work.
   Use the new dedicated helpers instead (see migration guide below).
-- **Minimum Elixir version bumped to 1.15**.
+- **Minimum Elixir version bumped to 1.16**.
 
 ### Migration from v0.1.0
 

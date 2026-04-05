@@ -33,5 +33,6 @@ jobs:
       - run: mix compile --warnings-as-errors
       - run: mix test --trace
       - run: mix coveralls.github
+        if: matrix.combo.elixir == '1.19.5'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

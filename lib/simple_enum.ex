@@ -27,8 +27,14 @@ defmodule SimpleEnum do
 
    * `:allow_duplicate_keys` - when `true`, allows duplicate keys
      in the enumerators list. Defaults to `false`.
+     Note: when duplicates exist, `name/1` and `name/2` will return
+     the value of the first match (standard Keyword list behavior).
+     `name_keys/0` returns deduplicated keys.
    * `:allow_duplicate_values` - when `true`, allows duplicate values
      in the enumerators list. Defaults to `false`.
+     Note: when duplicates exist, `name/1` will return the first
+     matching key for a given value.
+     `name_values/0` returns deduplicated values.
 
   The following macros are generated:
 
@@ -124,8 +130,8 @@ defmodule SimpleEnum do
       @name unquote(expanded_name)
       @enum_name unquote(enum_name)
       @fields unquote(fields)
-      @keys unquote(keys)
-      @values unquote(values)
+      @keys unquote(Enum.uniq(keys))
+      @values unquote(Enum.uniq(values))
       @fields_rev @fields
                   |> Enum.map(fn {k, v} -> {v, k} end)
                   |> Map.new()
